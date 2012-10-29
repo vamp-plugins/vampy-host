@@ -6,11 +6,11 @@
 #include <pyRealTime.h>
 
 //includes for vamp host
-#include "vamp-sdk/Plugin.h"
-#include "vamp-sdk/PluginHostAdapter.h"
-#include "vamp-sdk/hostext/PluginChannelAdapter.h"
-#include "vamp-sdk/hostext/PluginInputDomainAdapter.h"
-#include "vamp-sdk/hostext/PluginLoader.h"
+#include "vamp-hostsdk/Plugin.h"
+#include "vamp-hostsdk/PluginHostAdapter.h"
+#include "vamp-hostsdk/PluginChannelAdapter.h"
+#include "vamp-hostsdk/PluginInputDomainAdapter.h"
+#include "vamp-hostsdk/PluginLoader.h"
 //#include "vamp/vamp.h"
 
 #include <iostream>

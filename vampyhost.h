@@ -3,7 +3,7 @@
 #ifndef _VAMPYHOST_H_
 #define _VAMPYHOST_H_
 
-#include "vamp-sdk/Plugin.h"
+#include "vamp-hostsdk/Plugin.h"
 #include <string>
 
 // structure of NumPy array intrface (just a hack, shouldn't be needed here...)

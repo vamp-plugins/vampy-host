@@ -15,7 +15,7 @@
 
 #include <Python.h>
 #include <pyRealTime.h>
-#include "vamp-sdk/Plugin.h"
+#include "vamp-hostsdk/Plugin.h"
 #include <string>
 
 using namespace std;
@@ -186,7 +186,7 @@ RealTime_add(PyObject *s, PyObject *w)
         PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
 
-    result->rt = new RealTime::RealTime(
+    result->rt = new RealTime(
 	*((RealTimeObject*)s)->rt + *((RealTimeObject*)w)->rt);
     return (PyObject*)result;
 }
@@ -199,7 +199,7 @@ RealTime_subtract(PyObject *s, PyObject *w)
         PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
 
-    result->rt = new RealTime::RealTime(
+    result->rt = new RealTime(
 	*((RealTimeObject*)s)->rt - *((RealTimeObject*)w)->rt);
     return (PyObject*)result;
 }
@@ -305,7 +305,7 @@ RealTime_frame2RealTime(PyObject *ignored, PyObject *args)
     if (self == NULL)
         return NULL;
 
-    self->rt = new RealTime::RealTime(
+    self->rt = new RealTime(
 	RealTime::frame2RealTime(frame,sampleRate));
 
     return (PyObject *) self;
@@ -346,18 +346,18 @@ RealTime_new(PyObject *ignored, PyObject *args)
     self->rt = NULL;
 
     if (sec == 0 && nsec == 0 && fmt == 0) 
-        self->rt = new RealTime::RealTime();
+        self->rt = new RealTime();
     else if (fmt == 0)
-        self->rt = new RealTime::RealTime(sec,nsec);
+        self->rt = new RealTime(sec,nsec);
     else { 
 
         if (!string(fmt).compare("float") ||
             !string(fmt).compare("seconds"))  
-            self->rt = new RealTime::RealTime( 
+            self->rt = new RealTime( 
                 RealTime::fromSeconds((double) unary)); 
 
         if (!string(fmt).compare("milliseconds")) {
-            self->rt = new RealTime::RealTime( 
+            self->rt = new RealTime( 
                 RealTime::fromSeconds((double) unary / 1000.0)); }
     }
 
@@ -408,7 +408,7 @@ PyRealTime_FromRealTime(Vamp::RealTime *rt) {
 	PyObject_New(RealTimeObject, &RealTime_Type); 
     if (self == NULL) return NULL;
 
-    self->rt = new RealTime::RealTime(*rt);
+    self->rt = new RealTime(*rt);
     return (PyObject*) self;
     //TODO: check if we need to INCREF here
 }

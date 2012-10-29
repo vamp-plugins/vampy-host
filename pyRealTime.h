@@ -2,19 +2,19 @@
 #ifndef _PYREALTIME_H_
 #define _PYREALTIME_H_
 
-#include "vamp-sdk/Plugin.h"
+#include "vamp-hostsdk/Plugin.h"
 
 /* RealTime Type Object's structure    */
 /* Doc:: 10.2 Common Object Structures */
 typedef struct {
     PyObject_HEAD
     /*PyObject	*rt_attrs;*/
-    Vamp::RealTime::RealTime *rt;
+    Vamp::RealTime *rt;
 } RealTimeObject; 
 
 PyAPI_DATA(PyTypeObject) RealTime_Type;
 
-#define PyRealTime_CheckExact(v)	((v)->ob_type == &RealTime_Type)
+#define PyRealTime_CheckExact(v) ((v)->ob_type == &RealTime_Type)
 #define PyRealTime_Check(v) PyObject_TypeCheck(v, &RealTime_Type)
 
 /* pyRealTime C API functions */
@@ -30,8 +30,8 @@ extern "C" {
 PyAPI_FUNC(PyObject *) 
 PyRealTime_FromRealTime(Vamp::RealTime *rt);
 
-PyAPI_FUNC(Vamp::RealTime::RealTime *) 
-PyRealTime_AsPointer (PyObject *self);
+PyAPI_FUNC(Vamp::RealTime *) 
+PyRealTime_AsPointer(PyObject *self);
 
 /* PyRealTime Module functions */
 

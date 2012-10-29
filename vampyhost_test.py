@@ -1,10 +1,12 @@
 
 import sys
-sys.path.append('/Users/Shared/Development/python-extensions')
-sys.path.append('/Users/Shared/Development/vampy-host-experiments/')
+import os
+
+sys.path.append(os.getcwd())
+
 #from melscale import melscale
 #from melscale import initialize
-import wave 
+import wave
 from wave import *
 from pylab import *
 # from melscale import *
@@ -13,22 +15,22 @@ from pylab import *
 from time import *
 
 from vampyhost import *
-import vampyhost 
+import vampyhost
 import vampyhost as vh
 #import pyRealTime
 #from pyRealTime import *
 
 
 #deal with an audio file
-wavfile='/Users/Shared/multitrack (small)/mix.wav'
+wavfile='test.wav'
 
 wavobj = wave.open(wavfile,'r')
 samplerate = wavobj.getframerate()
 print "samplerate: ",samplerate
 print "number of samples (frames): ",wavobj.getnframes() #total number of samples 4647744
 channels = wavobj.getnchannels();
-print "channels: ",channels 
-print "sample-width: ",wavobj.getsampwidth() 
+print "channels: ",channels
+print "sample-width: ",wavobj.getsampwidth()
 print "position: ",wavobj.tell()
 wavobj.setpos(1000000)
 
@@ -56,10 +58,10 @@ class feature_example():
 		self.timestamp
 		self.values
 		self.label
-		
+
 pluginlist = vh.enumeratePlugins()
 for i,n in enumerate(pluginlist) : print i,":",n
-pluginKey=pluginlist[12];
+pluginKey=pluginlist[0]; # try the first plugin listed
 
 retval = vh.getLibraryPath(pluginKey)
 print pluginKey
@@ -86,7 +88,7 @@ print output
 #print output[1].label
 
 print "_______________OUTPUT TYPE_________:",type(out)
-in_audio = frombuffer(audio,int16,-1,0) 
+in_audio = frombuffer(audio,int16,-1,0)
 out_audio = frombuffer(out,float32,-1,0)
 subplot(211)
 plot(in_audio)
@@ -104,7 +106,7 @@ show()
 #output is a list of list of features
 
 vh.unloadPlugin(handle);
-vh.unloadPlugin(handle); # test if it chrashes... 
+vh.unloadPlugin(handle); # test if it chrashes...
 
 print vh.getOutputList(handle)
 
@@ -115,4 +117,4 @@ print vh.getOutputList(handle)
 #oneSamplePerStep, FixedSamplerate : can return numpy array
 #variableSamplerate : list of featres only
 
-#print dir(vampyhost)	
+#print dir(vampyhost)
