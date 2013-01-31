@@ -1,8 +1,8 @@
 
 PY_INCLUDE_PATH	:= /usr/include/python2.7
 
-CFLAGS		:= -O2 -Wall -I$(PY_INCLUDE_PATH) -I.
-CXXFLAGS	:= -O2 -Wall -I$(PY_INCLUDE_PATH) -I.
+CFLAGS		:= -O2 -fPIC -Wall -I$(PY_INCLUDE_PATH) -I.
+CXXFLAGS	:= -O2 -fPIC -Wall -I$(PY_INCLUDE_PATH) -I.
 
 LDFLAGS		:= -shared -lpython2.7 -lvamp-hostsdk
 #LDFLAGS		:= -dynamiclib -lpython2.5 /usr/lib/libvamp-hostsdk.a

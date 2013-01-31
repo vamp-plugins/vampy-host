@@ -39,42 +39,42 @@ using Vamp::HostExt::PluginLoader;
 
 
 /* MODULE HELPER FUNCTIONS */
-PyDoc_STRVAR(xx_foo_doc, "Some description");
+PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
 /*obtain C plugin handle and key from pyCobject */
-int getPluginHandle 
+bool getPluginHandle 
 (PyObject *pyPluginHandle, Plugin **plugin, string **pKey=NULL) {
 
     //char errormsg[]="Wrong input argument: Plugin Handle required.";
 
     *plugin = NULL;
-    if (!PyCObject_Check(pyPluginHandle)) return NULL;
+    if (!PyCObject_Check(pyPluginHandle)) return false;
 
     //try to convert to Plugin pointer
     Plugin *p = (Plugin*) PyCObject_AsVoidPtr(pyPluginHandle);
-    if (!p) return NULL;	
+    if (!p) return false;	
 
     string pId;
 
     if (pKey) {
 	*pKey = (string*) PyCObject_GetDesc(pyPluginHandle);
-	if (!*pKey) return NULL;
+	if (!*pKey) return false;
 	pId = *(string*) *pKey;
 
     } else {
 
 	void *pKey = PyCObject_GetDesc(pyPluginHandle);
-	if (!pKey) return NULL;
+	if (!pKey) return false;
 	pId = *(string*) pKey;
     }
 	
     string::size_type pos = pId.find(':');
-    if (pos == string::npos) return NULL;
+    if (pos == string::npos) return false;
 
     pId = pId.substr(pId.rfind(':')+1);
     string identifier = p->getIdentifier();	
 			
-    if (pId.compare(identifier)) return NULL;
+    if (pId.compare(identifier)) return false;
 
     *plugin = p;
     return true;
