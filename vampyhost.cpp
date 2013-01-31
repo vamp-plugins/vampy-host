@@ -5,6 +5,10 @@
 #include <vampyhost.h>
 #include <pyRealTime.h>
 
+//!!! NB all our NumPy stuff is currently using the deprecated API --
+//!!! need to work out how to update this
+#include "numpy/arrayobject.h"
+
 //includes for vamp host
 #include "vamp-hostsdk/Plugin.h"
 #include "vamp-hostsdk/PluginHostAdapter.h"
@@ -367,8 +371,6 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginHandle;
     size_t channels,blockSize,stepSize;
-    //PyObject pyInputSampleType;
-    bool mixChannels = false;
 
     if (!PyArg_ParseTuple (args, "Oiii",  &pyPluginHandle, 
 			   (size_t) &channels, 
@@ -394,23 +396,7 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     plugDesc->channels = channels;
     plugDesc->stepSize = stepSize;
     plugDesc->blockSize = blockSize;
-    plugDesc->inputSampleType = PyPluginDescriptor::int16;
-    plugDesc->sampleSize = 2;
 
-/*!!! not a problem with plugin loader adapter
-    plugDesc->mixChannels = mixChannels; 
-
-    size_t minch = plugin->getMinChannelCount();
-    size_t maxch = plugin->getMaxChannelCount();
-    if (mixChannels) channels = 1;
-*/
-    /* TODO: DO WE WANT TO MIX IT DOWN? */
-/*
-    if (maxch < channels || channels < minch) {
-	PyErr_SetString(PyExc_TypeError,
-			"Invalid number of channels.");
-	return NULL; }
-*/
     if (!plugin->initialise(channels, stepSize, blockSize)) {
 	PyErr_SetString(PyExc_TypeError,
 			"Plugin initialization failed.");
@@ -421,6 +407,70 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     plugDesc->isInitialised = true;
 	
     return Py_True;
+}
+
+// These conversion functions are borrowed from PyTypeInterface in VamPy
+
+template<typename RET, typename DTYPE>
+static
+RET *pyArrayConvert(char* raw_data_ptr, long length, size_t strides)
+{
+    RET *rValue = new RET[length];
+		
+    /// check if the array is continuous, if not use strides info
+    if (sizeof(DTYPE)!=strides) {
+        char* data = (char*) raw_data_ptr;
+        for (long i = 0; i<length; ++i){
+            rValue[i] = (RET)(*((DTYPE*)data));
+            data += strides;
+        }
+        return rValue;
+    }
+
+    DTYPE* data = (DTYPE*) raw_data_ptr;
+    for (long i = 0; i<length; ++i){
+        rValue[i] = (RET)data[i];
+    }
+    
+    return rValue;
+}
+
+static float *
+pyArrayToFloatArray(PyObject *pyValue)
+{
+    if (!PyArray_Check(pyValue)) {
+        cerr << "pyArrayToFloatArray: Failed, object has no array interface" << endl;
+        return 0;
+    } 
+
+    PyArrayObject* pyArray = (PyArrayObject*) pyValue;
+    PyArray_Descr* descr = pyArray->descr;
+	
+    /// check raw data and descriptor pointers
+    if (pyArray->data == 0 || descr == 0) {
+        cerr << "pyArrayToFloatArray: Failed, NumPy array has NULL data or descriptor" << endl;
+        return 0;
+    }
+
+    /// check dimensions
+    if (pyArray->nd != 1) {
+        cerr << "pyArrayToFloatArray: Failed, NumPy array is multi-dimensional" << endl;
+        return 0;
+    }
+
+    /// check strides (useful if array is not continuous)
+    size_t strides = *((size_t*) pyArray->strides);
+    
+    /// convert the array
+    switch (descr->type_num) {
+    case NPY_FLOAT : // dtype='float32'
+        return pyArrayConvert<float,float>(pyArray->data,pyArray->dimensions[0],strides);
+    case NPY_DOUBLE : // dtype='float64'
+        return pyArrayConvert<float,double>(pyArray->data,pyArray->dimensions[0],strides);
+    default:
+        cerr << "pyArrayToFloatArray: Failed: Unsupported value type " << descr->type_num << " in NumPy array object (only float32, float64 supported)" << endl;
+        return 0;
+    }
 }
 
 
@@ -445,19 +495,14 @@ vampyhost_process(PyObject *self, PyObject *args)
 	PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
 	return NULL; }
 
-    // RealTime *rt = PyRealTime_AsPointer(pyRealTime);
-    // if (!rt) return NULL;
-    // cerr << ">>>sec: " << rt->sec << " nsec: " << rt->nsec << endl;
-    // 
-    // PyObject *rrt = PyRealTime_FromRealTime (rt);
-
-    string *key;	
+    string *key;
     Plugin *plugin; 
 
-    if ( !getPluginHandle(pyPluginHandle, &plugin, &key) ) {
+    if (!getPluginHandle(pyPluginHandle, &plugin, &key)) {
 	PyErr_SetString(PyExc_AttributeError,
 			"Invalid or already deleted plugin handle.");
-	return NULL; }
+	return NULL;
+    }
 
     PyPluginDescriptor *pd = (PyPluginDescriptor*) key;
 
@@ -469,75 +514,42 @@ vampyhost_process(PyObject *self, PyObject *args)
     size_t channels =  pd->channels;	
     size_t blockSize = pd->blockSize;
 
-/*
-  Handle the case when we get the data as a character buffer
-  Handle SampleFormats: int16, float32	
-
-*/		
-
-    if (PyString_Check(pyBuffer)) {
-	cerr << ">>> String obj passed in." << endl;
+    if (!PyList_Check(pyBuffer)) {
+	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+        return NULL;
     }
 
-    size_t sample_size = sizeof(short);
+    if (PyList_GET_SIZE(pyBuffer) != channels) {
+	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
+        return NULL;
+    }
 
-    long buflen = (long) PyString_GET_SIZE(pyBuffer);
+    float **inbuf = new float *[channels];
 
-    size_t input_length = 
-	static_cast <size_t> (buflen/channels/sample_size);
-
-    if (input_length == pd->blockSize) {
-	cerr << ">>> A full block has been passed in." << endl; }
-    short *input = 
-	reinterpret_cast <short*> (PyString_AS_STRING(pyBuffer));
-
-    //convert int16 PCM data to 32-bit floats
-    float **plugbuf = new float*[channels];
-    float normfact = 1.0f / static_cast <float> (SHRT_MAX);
-		
-    for (size_t c = 0; c < channels; ++c) {
-
-	plugbuf[c] = new float[blockSize+2];
-  
-      	size_t j = 0;
-        while (j < input_length) {
-	    plugbuf[c][j] = normfact *
-		static_cast <float> (input[j * channels + c]);
-	    ++j; 
+    for (int c = 0; c < channels; ++c) {
+        PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
+        inbuf[c] = pyArrayToFloatArray(cbuf);
+        if (!inbuf[c]) {
+            PyErr_SetString(PyExc_TypeError,"NumPy Array required for each channel in process input.");
+            return NULL;
         }
-        while (j < blockSize) {
-            plugbuf[c][j] = 0.0f;
-            ++j;
-        }
-    }	
-
-    const char *output = reinterpret_cast <const char*> (plugbuf[0]);
-    Py_ssize_t len = (Py_ssize_t) channels*blockSize*4;
-	
-    PyObject* pyReturnBuffer = 
-	PyString_FromStringAndSize(output,len);
-
-    // long frame = 1;
-    // unsigned int samplerate = (unsigned int) pd->inputSampleRate;
+    }
 
     RealTime timeStamp = *PyRealTime_AsPointer(pyRealTime);
 
     //Call process and store the output
-    pd->output = plugin->process(
-	plugbuf, 
-	timeStamp);
+    pd->output = plugin->process(inbuf, timeStamp);
 
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
 /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
 
 
-    //We can safely delete here
-    for(size_t k=0; k<channels; k++){
-	delete[] plugbuf[k];
+    for (int c = 0; c < channels; ++c){
+	delete[] inbuf[c];
     }
-    delete[] plugbuf;
+    delete[] inbuf;
 
-    return pyReturnBuffer;
+    return NULL; //!!! Need to return actual features!
 
 }
 

@@ -4,10 +4,10 @@ import os
 
 sys.path.append(os.getcwd())
 
+import scikits.audiolab as al;
+
 #from melscale import melscale
 #from melscale import initialize
-import wave
-from wave import *
 from pylab import *
 # from melscale import *
 from numpy import *
@@ -20,28 +20,17 @@ import vampyhost as vh
 #import pyRealTime
 #from pyRealTime import *
 
-
 #deal with an audio file
 wavfile='test.wav'
 
-wavobj = wave.open(wavfile,'r')
-samplerate = wavobj.getframerate()
+audio, samplerate, format = al.wavread(wavfile);
+
 print "samplerate: ",samplerate
-print "number of samples (frames): ",wavobj.getnframes() #total number of samples 4647744
-channels = wavobj.getnchannels();
+print "number of samples (frames): ",audio.size #total number of samples 4647744
+channels = audio[0].size
 print "channels: ",channels
-print "sample-width: ",wavobj.getsampwidth()
-print "position: ",wavobj.tell()
-#wavobj.setpos(1000000)
 
-print wavobj.tell()
-audio = wavobj.readframes(1024) #returns an 8-bit buffer
-print wavobj.tell()
-print dir(audio)
-print len(audio)
-wavobj.close()
-
-
+#!!! continue with this lark
 
 rt=realtime(4,70)
 
