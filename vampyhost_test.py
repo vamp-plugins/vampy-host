@@ -23,11 +23,14 @@ import vampyhost as vh
 #deal with an audio file
 wavfile='test.wav'
 
-audio, samplerate, format = al.wavread(wavfile);
+wavdata, samplerate, format = al.wavread(wavfile);
 
 print "samplerate: ",samplerate
-print "number of samples (frames): ",audio.size #total number of samples 4647744
-channels = audio[0].size
+print "number of samples (frames): ",wavdata.size
+
+audio = wavdata.transpose()
+
+channels = audio.size
 print "channels: ",channels
 
 #!!! continue with this lark
