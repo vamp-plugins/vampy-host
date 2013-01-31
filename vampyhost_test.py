@@ -32,7 +32,7 @@ channels = wavobj.getnchannels();
 print "channels: ",channels
 print "sample-width: ",wavobj.getsampwidth()
 print "position: ",wavobj.tell()
-wavobj.setpos(1000000)
+#wavobj.setpos(1000000)
 
 print wavobj.tell()
 audio = wavobj.readframes(1024) #returns an 8-bit buffer

@@ -241,7 +241,8 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
     PluginLoader *loader = PluginLoader::getInstance();
 	
     //load plugin
-    Plugin *plugin = loader->loadPlugin (pluginKey, 48000);
+    Plugin *plugin = loader->loadPlugin
+        (pluginKey, 48000, PluginLoader::ADAPT_ALL_SAFE);
     if (!plugin) { 		
 	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
 	PyErr_SetString(PyExc_TypeError,pyerr.c_str()); 
@@ -395,18 +396,21 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     plugDesc->blockSize = blockSize;
     plugDesc->inputSampleType = PyPluginDescriptor::int16;
     plugDesc->sampleSize = 2;
+
+/*!!! not a problem with plugin loader adapter
     plugDesc->mixChannels = mixChannels; 
-	
+
     size_t minch = plugin->getMinChannelCount();
     size_t maxch = plugin->getMaxChannelCount();
     if (mixChannels) channels = 1;
-
+*/
     /* TODO: DO WE WANT TO MIX IT DOWN? */
+/*
     if (maxch < channels || channels < minch) {
 	PyErr_SetString(PyExc_TypeError,
 			"Invalid number of channels.");
 	return NULL; }
-
+*/
     if (!plugin->initialise(channels, stepSize, blockSize)) {
 	PyErr_SetString(PyExc_TypeError,
 			"Plugin initialization failed.");
