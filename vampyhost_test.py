@@ -33,8 +33,6 @@ audio = wavdata.transpose()
 channels = audio.size
 print "channels: ",channels
 
-#!!! continue with this lark
-
 rt=realtime(4,70)
 
 #test RealTime Object
@@ -65,14 +63,21 @@ handle = vh.loadPlugin(pluginKey,samplerate);
 print "\n\nPlugin handle: ",handle
 
 print "Output list of: ",pluginKey,"\n",vh.getOutputList(handle)
+print "Have ", len(audio), " channels in audio"
 
 #initialise: pluginhandle, channels, stepSize, blockSize
-vh.initialise(handle,1,1024,1024)
+if vh.initialise(handle,len(audio),1024,1024):
+	print "Initialise succeeded"
+else:
+	print "Initialise failed!"
+	exit(1)
+
+#!!! continue with this lark
 
 rt=frame2RealTime(100000,22050)
 print type(rt)
 
-out=vh.process(handle,audio,rt)
+out=vh.process(handle,list(audio),rt) ##!!! cast to list should not be necessary
 output = vh.getOutput(handle,1);
 
 print type(output)

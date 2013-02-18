@@ -306,7 +306,8 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
     PluginLoader *loader = PluginLoader::getInstance();
 	
     //load plugin
-    Plugin *plugin = loader->loadPlugin (pluginKey, inputSampleRate);
+    Plugin *plugin = loader->loadPlugin (pluginKey, inputSampleRate, 
+                                         PluginLoader::ADAPT_ALL_SAFE);
     if (!plugin) { 		
 	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
 	PyErr_SetString(PyExc_TypeError,pyerr.c_str()); 
@@ -398,9 +399,11 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     plugDesc->blockSize = blockSize;
 
     if (!plugin->initialise(channels, stepSize, blockSize)) {
+        std::cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << " and ADAPT_ALL_SAFE set" << std::endl;
 	PyErr_SetString(PyExc_TypeError,
 			"Plugin initialization failed.");
-	return NULL; }
+	return NULL;
+    }
 
     plugDesc->identifier = 
 	plugDesc->key.substr(plugDesc->key.rfind(':')+1);
@@ -520,6 +523,7 @@ vampyhost_process(PyObject *self, PyObject *args)
     }
 
     if (PyList_GET_SIZE(pyBuffer) != channels) {
+        std::cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << std::endl;
 	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
         return NULL;
     }
