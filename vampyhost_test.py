@@ -1,57 +1,55 @@
-
 import sys
 import os
 
 sys.path.append(os.getcwd())
 
-import scikits.audiolab as al;
+import numpy as np
+print np.__version__
+
+import matplotlib.pyplot as plt
+import scikits.audiolab as al
+
+import vampyhost as vh
 
 #from melscale import melscale
 #from melscale import initialize
-from pylab import *
 # from melscale import *
-from numpy import *
-from pylab import *
-from time import *
-
-from vampyhost import *
-import vampyhost
-import vampyhost as vh
 #import pyRealTime
-#from pyRealTime import *
 
 #deal with an audio file
-wavfile='test.wav'
+wavfile = 'test-mono.wav'
+# wavfile = '4sample-stereo-ny.wav'
 
-wavdata, samplerate, format = al.wavread(wavfile);
+af = al.Sndfile(wavfile)
 
-print "samplerate: ",samplerate
-print "number of samples (frames): ",wavdata.size
+nchannels = af.channels
 
-audio = wavdata.transpose()
+print "Samplerate: ", af.samplerate
+print "Number of channels: ", nchannels
+print "Number of samples (frames): ", af.nframes
 
-channels = audio.size
-print "channels: ",channels
-
-rt=realtime(4,70)
+rt = vh.realtime(4, 70)
 
 #test RealTime Object
-for i in [0,1,2] :
-	if (i==0) : rtl=[]
-	rtl.append(realtime())
-	print ">>>>>RealTime's method: ", rtl[i].values()
+for i in [0, 1, 2]:
+    if i == 0:
+        rtl = []
+    rtl.append(vh.realtime())
+    print ">>>>>RealTime's method: ", rtl[i].values()
 
 
 class feature_example():
-	def __init__(self):
-		self.hasTimestamp
-		self.timestamp
-		self.values
-		self.label
+    def __init__(self):
+        self.hasTimestamp
+        self.timestamp
+        self.values
+        self.label
 
 pluginlist = vh.enumeratePlugins()
-for i,n in enumerate(pluginlist) : print i,":",n
-pluginKey=pluginlist[0]; # try the first plugin listed
+for i, n in enumerate(pluginlist):
+    print i, ":", n
+
+pluginKey = pluginlist[0]  # try the first plugin listed
 
 retval = vh.getLibraryPath(pluginKey)
 print pluginKey
@@ -59,40 +57,48 @@ print retval
 
 print vh.getPluginCategory(pluginKey)
 print vh.getOutputList(pluginKey)
-handle = vh.loadPlugin(pluginKey,samplerate);
-print "\n\nPlugin handle: ",handle
+handle = vh.loadPlugin(pluginKey, af.samplerate)
 
-print "Output list of: ",pluginKey,"\n",vh.getOutputList(handle)
-print "Have ", len(audio), " channels in audio"
 
-#initialise: pluginhandle, channels, stepSize, blockSize
-if vh.initialise(handle,len(audio),1024,1024):
-	print "Initialise succeeded"
+print "\n\nPlugin handle: ", handle
+print "Output list of: ", pluginKey, "\n", vh.getOutputList(handle)
+
+# initialise: pluginhandle, channels, stepSize, blockSize
+if vh.initialise(handle, nchannels, 1024, 1024):
+    print "Initialise succeeded"
 else:
-	print "Initialise failed!"
-	exit(1)
+    print "Initialise failed!"
+    exit(1)
 
-#!!! continue with this lark
+# should return a realtime object
+rt = vh.frame2RealTime(100000, 22050)
+print rt
 
-rt=frame2RealTime(100000,22050)
-print type(rt)
+assert type(rt) == type(vh.realtime())
 
-out=vh.process(handle,list(audio),rt) ##!!! cast to list should not be necessary
-output = vh.getOutput(handle,1);
+audio = af.read_frames(af.nframes)
+audio = np.transpose(audio)
+
+print "Gonna send", len(audio)
+
+out = vh.process(handle, audio, rt)
+print "OKEYDOKEY: Processed"
+
+output = vh.getOutput(handle, 1)
 
 print type(output)
 print output
 #print output[1].label
 
-print "_______________OUTPUT TYPE_________:",type(out)
-in_audio = frombuffer(audio,int16,-1,0)
-out_audio = frombuffer(out,float32,-1,0)
-subplot(211)
-plot(in_audio)
-subplot(212)
-plot(out_audio)
+print "_______________OUTPUT TYPE_________:", type(out)
+in_audio = np.frombuffer(audio, np.int16, -1, 0)
+out_audio = np.frombuffer(out, np.float32, -1, 0)
+plt.subplot(211)
+plt.plot(in_audio)
+plt.subplot(212)
+plt.plot(out_audio)
 
-show()
+plt.show()
 #do some processing here
 
 #buffer is a multichannel frame or a numpy array containing samples
@@ -102,8 +108,8 @@ show()
 
 #output is a list of list of features
 
-vh.unloadPlugin(handle);
-vh.unloadPlugin(handle); # test if it chrashes...
+vh.unloadPlugin(handle)
+vh.unloadPlugin(handle)  # test if it chrashes...
 
 print vh.getOutputList(handle)
 

@@ -483,12 +483,12 @@ static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginHandle;
-    PyObject *pyBuffer;
+    PyArrayObject *pyBuffer;
     PyObject *pyRealTime;
 
     if (!PyArg_ParseTuple(args, "OOO",
 			  &pyPluginHandle,	// C object holding a pointer to a plugin and its descriptor
-			  &pyBuffer,			// Audio data
+			  &pyBuffer,			// Audio data (NumPy ndim array)
 			  &pyRealTime)) {		// TimeStamp
 	PyErr_SetString(PyExc_TypeError,
 			"Required: plugin handle, buffer, timestmap.");
@@ -502,47 +502,71 @@ vampyhost_process(PyObject *self, PyObject *args)
     Plugin *plugin;
 
     if (!getPluginHandle(pyPluginHandle, &plugin, &key)) {
-	PyErr_SetString(PyExc_AttributeError,
-			"Invalid or already deleted plugin handle.");
-	return NULL;
+    PyErr_SetString(PyExc_AttributeError,
+            "Invalid or already deleted plugin handle.");
+    return NULL;
     }
 
     PyPluginDescriptor *pd = (PyPluginDescriptor*) key;
 
     if (!pd->isInitialised) {
-	PyErr_SetString(PyExc_StandardError,
-			"Plugin has not been initialised.");
-	return NULL; }
+    PyErr_SetString(PyExc_StandardError,
+            "Plugin has not been initialised.");
+    return NULL; }
 
     size_t channels =  pd->channels;
     size_t blockSize = pd->blockSize;
 
-    if (!PyList_Check(pyBuffer)) {
-	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+    if (!PyArray_Check(pyBuffer)) {
+        PyErr_SetString(PyExc_TypeError, "Argument is not a Numpy array.");
         return NULL;
     }
 
-    if (PyList_GET_SIZE(pyBuffer) != channels) {
-        std::cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << std::endl;
+    if (pyBuffer->nd != channels) {
+        cerr << "Wrong number of channels: got " << pyBuffer->nd << ", expected " << channels << endl;
 	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
         return NULL;
     }
 
+    int n = pyBuffer->dimensions[0];
+    int m = pyBuffer->dimensions[1];
+
+    cout << "Kind :" << pyBuffer->descr->kind << endl;
+    cout << "Strides 0 :" << pyBuffer->strides[0] << endl;
+    cout << "Strides 1 :" << pyBuffer->strides[1] << endl;
+    cout << "Flags:" << pyBuffer->flags << endl;
+
     float **inbuf = new float *[channels];
+    cout << "Created inbuf with #channels: " << channels << endl;
 
     for (int c = 0; c < channels; ++c) {
-        PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
-        inbuf[c] = pyArrayToFloatArray(cbuf);
+
+        // cout << "[Host] Converting channel #" << c << endl;
+        // PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
+        // cout << "Ok1..." << endl;
+        // inbuf[c] = pyArrayToFloatArray(cbuf);
+
+        inbuf[c] = pyArrayToFloatArray((PyObject*) pyBuffer);
+
+        cout << "Ok2..." << endl;
+
         if (!inbuf[c]) {
             PyErr_SetString(PyExc_TypeError,"NumPy Array required for each channel in process input.");
             return NULL;
         }
+
+        cout << "[Host] Converted channel #" << c << endl;
+
     }
 
     RealTime timeStamp = *PyRealTime_AsPointer(pyRealTime);
 
+    cout << "[Host] Gonna call plugin->process" << endl;
+
     //Call process and store the output
     pd->output = plugin->process(inbuf, timeStamp);
+
+    cout << "[Host] Called plugin->process" << endl;
 
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
 /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
@@ -553,8 +577,11 @@ vampyhost_process(PyObject *self, PyObject *args)
     }
     delete[] inbuf;
 
-    return NULL; //!!! Need to return actual features!
 
+
+
+
+    return NULL; //!!! Need to return actual features!
 }
 
 /* GET / SET OUTPUT */
@@ -705,6 +732,9 @@ initvampyhost(void)
     /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
     if (m == NULL) return;
+
+    // Numpy array library initialization function
+    import_array();
 
     // PyModule_AddObject(m, "realtime", (PyObject *)&RealTime_Type);
 
