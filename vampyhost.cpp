@@ -569,19 +569,37 @@ vampyhost_process(PyObject *self, PyObject *args)
     cout << "[Host] Called plugin->process" << endl;
 
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
-/// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
+    /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
 
+    // Loop FeatureLists
+    for(int i = 0; i < pd->output.size(); i++ ){
+        cout << "FeatureList #" << i << " has size " << pd->output[i].size() << endl;
+
+        // loop Features
+        for(int j = 0; j < pd->output[i].size(); j++ ){
+            cout << "Feature #" << j << endl;
+            cout << "   Label: " << pd->output[i][j].label << endl;
+            cout << "   hasTimestamp? " << pd->output[i][j].hasTimestamp << endl;
+            cout << "   hasDuration? " << pd->output[i][j].hasDuration << endl;
+            cout << "   values.size " << pd->output[i][j].values.size() << endl;
+            cout << "   values[0] " << pd->output[i][j].values[0] << endl;
+        }
+    }
+
+    size_t outLength = pd->output[0].size();
+    Plugin::FeatureList features = pd->output[0];
+
+    // New PyList for the featurelist
+    PyObject *pyFeatureList = PyList_New(outLength);
+
+    cout << "Survived" << endl;
 
     for (int c = 0; c < channels; ++c){
 	delete[] inbuf[c];
     }
     delete[] inbuf;
 
-
-
-
-
-    return NULL; //!!! Need to return actual features!
+    return pyFeatureList; //!!! Need to return actual features!
 }
 
 /* GET / SET OUTPUT */

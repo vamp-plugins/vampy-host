@@ -81,8 +81,15 @@ audio = np.transpose(audio)
 
 print "Gonna send", len(audio)
 
+
 out = vh.process(handle, audio, rt)
-print "OKEYDOKEY: Processed"
+
+print "Processed correctly"
+
+print type(out)
+
+
+#######
 
 output = vh.getOutput(handle, 1)
 
