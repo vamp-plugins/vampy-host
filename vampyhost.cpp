@@ -531,10 +531,17 @@ vampyhost_process(PyObject *self, PyObject *args)
     int n = pyBuffer->dimensions[0];
     int m = pyBuffer->dimensions[1];
 
+    // Domain Type, either Vamp::Plugin::FrequencyDomain
+    // or Vamp::Plugin::TimeDomain
+    Vamp::Plugin::InputDomain dtype = plugin->getInputDomain();
+
     cout << "Kind :" << pyBuffer->descr->kind << endl;
     cout << "Strides 0 :" << pyBuffer->strides[0] << endl;
     cout << "Strides 1 :" << pyBuffer->strides[1] << endl;
     cout << "Flags:" << pyBuffer->flags << endl;
+
+    cout << "Input Domain" << dtype << endl;
+    cout << "Plugin Maker" << plugin->getMaker() << endl;
 
     float **inbuf = new float *[channels];
     cout << "Created inbuf with #channels: " << channels << endl;
@@ -571,12 +578,30 @@ vampyhost_process(PyObject *self, PyObject *args)
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
     /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
 
+
+    size_t featListOutLength = pd->output.size();
+
+    //New PyList for the featurelist
+    PyObject *pyFeatureList = PyList_New(featListOutLength);
+
+    PyArrayObject *aaaa;
+
+    npy_intp *dims[2];
+
+    // Plugin::FeatureList features = pd->output[0];
+
     // Loop FeatureLists
     for(int i = 0; i < pd->output.size(); i++ ){
+        //New PyList for the features
+        size_t outLength = pd->output[i].size();
+        PyObject *pyFeatureList = PyList_New(outLength);
+
         cout << "FeatureList #" << i << " has size " << pd->output[i].size() << endl;
 
         // loop Features
         for(int j = 0; j < pd->output[i].size(); j++ ){
+
+            // debug - printing some features
             cout << "Feature #" << j << endl;
             cout << "   Label: " << pd->output[i][j].label << endl;
             cout << "   hasTimestamp? " << pd->output[i][j].hasTimestamp << endl;
@@ -586,20 +611,27 @@ vampyhost_process(PyObject *self, PyObject *args)
         }
     }
 
-    size_t outLength = pd->output[0].size();
-    Plugin::FeatureList features = pd->output[0];
 
-    // New PyList for the featurelist
-    PyObject *pyFeatureList = PyList_New(outLength);
+    // Gonna print just one
 
-    cout << "Survived" << endl;
+    size_t arraySize = pd->output[0][0].values.size();
+    PyObject *pySampleList = PyList_New((Py_ssize_t) arraySize);
+    PyObject **pySampleListArray =  PySequence_Fast_ITEMS(pySampleList);
+
+    for (size_t idx = 0; idx < arraySize; ++idx) {
+        PyObject *pyFloat=PyFloat_FromDouble((double) pd->output[0][0].values[idx]);
+        pySampleListArray[idx] = pyFloat;
+    }
 
     for (int c = 0; c < channels; ++c){
 	delete[] inbuf[c];
     }
     delete[] inbuf;
 
-    return pyFeatureList; //!!! Need to return actual features!
+    return PyArray_Return((PyArrayObject*) pySampleList);
+    // return pySampleList;
+
+    // return pyFeatureList; //!!! Need to return actual features!
 }
 
 /* GET / SET OUTPUT */

@@ -88,9 +88,12 @@ print "Processed correctly"
 
 print type(out)
 
+print "EI:"
+print len(out)
+print out
+print "OH Let's Go:"
 
 #######
-
 output = vh.getOutput(handle, 1)
 
 print type(output)
