@@ -546,6 +546,8 @@ vampyhost_process(PyObject *self, PyObject *args)
     float **inbuf = new float *[channels];
     cout << "Created inbuf with #channels: " << channels << endl;
 
+
+
     for (int c = 0; c < channels; ++c) {
 
         // cout << "[Host] Converting channel #" << c << endl;
@@ -555,7 +557,7 @@ vampyhost_process(PyObject *self, PyObject *args)
 
         inbuf[c] = pyArrayToFloatArray((PyObject*) pyBuffer);
 
-        cout << "Ok2..." << endl;
+        cout << "Converted " << endl;
 
         if (!inbuf[c]) {
             PyErr_SetString(PyExc_TypeError,"NumPy Array required for each channel in process input.");
