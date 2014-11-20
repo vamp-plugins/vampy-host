@@ -3,11 +3,16 @@
 //include for python extension module: must be first
 #include <Python.h>
 #include <vampyhost.h>
-#include <pyRealTime.h>
+
+#include <PyRealTime.h>
 
 //!!! NB all our NumPy stuff is currently using the deprecated API --
 //!!! need to work out how to update this
-#include "numpy/arrayobject.h"
+//#include "numpy/arrayobject.h"
+
+#define HAVE_NUMPY 1 // Required
+
+#include "PyTypeConversions.h"
 
 //includes for vamp host
 #include "vamp-hostsdk/Plugin.h"
@@ -412,71 +417,6 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     return Py_True;
 }
 
-// These conversion functions are borrowed from PyTypeInterface in VamPy
-
-template<typename RET, typename DTYPE>
-static
-RET *pyArrayConvert(char* raw_data_ptr, long length, size_t strides)
-{
-    RET *rValue = new RET[length];
-
-    /// check if the array is continuous, if not use strides info
-    if (sizeof(DTYPE)!=strides) {
-        char* data = (char*) raw_data_ptr;
-        for (long i = 0; i<length; ++i){
-            rValue[i] = (RET)(*((DTYPE*)data));
-            data += strides;
-        }
-        return rValue;
-    }
-
-    DTYPE* data = (DTYPE*) raw_data_ptr;
-    for (long i = 0; i<length; ++i){
-        rValue[i] = (RET)data[i];
-    }
-
-    return rValue;
-}
-
-static float *
-pyArrayToFloatArray(PyObject *pyValue)
-{
-    if (!PyArray_Check(pyValue)) {
-        cerr << "pyArrayToFloatArray: Failed, object has no array interface" << endl;
-        return 0;
-    }
-
-    PyArrayObject* pyArray = (PyArrayObject*) pyValue;
-    PyArray_Descr* descr = pyArray->descr;
-
-    /// check raw data and descriptor pointers
-    if (pyArray->data == 0 || descr == 0) {
-        cerr << "pyArrayToFloatArray: Failed, NumPy array has NULL data or descriptor" << endl;
-        return 0;
-    }
-
-    /// check dimensions
-    if (pyArray->nd != 1) {
-        cerr << "pyArrayToFloatArray: Failed, NumPy array is multi-dimensional" << endl;
-        return 0;
-    }
-
-    /// check strides (useful if array is not continuous)
-    size_t strides = *((size_t*) pyArray->strides);
-
-    /// convert the array
-    switch (descr->type_num) {
-    case NPY_FLOAT : // dtype='float32'
-        return pyArrayConvert<float,float>(pyArray->data,pyArray->dimensions[0],strides);
-    case NPY_DOUBLE : // dtype='float64'
-        return pyArrayConvert<float,double>(pyArray->data,pyArray->dimensions[0],strides);
-    default:
-        cerr << "pyArrayToFloatArray: Failed: Unsupported value type " << descr->type_num << " in NumPy array object (only float32, float64 supported)" << endl;
-        return 0;
-    }
-}
-
-
 /* RUN PROCESS */
 
 static PyObject *
@@ -514,8 +454,8 @@ vampyhost_process(PyObject *self, PyObject *args)
 			"Plugin has not been initialised.");
 	return NULL; }
 
-    size_t channels =  pd->channels;
-    size_t blockSize = pd->blockSize;
+    int channels =  pd->channels;
+//    int blockSize = pd->blockSize;
 
     if (!PyList_Check(pyBuffer)) {
 	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
@@ -530,16 +470,20 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     float **inbuf = new float *[channels];
 
+    PyTypeConversions typeConv;
+    typeConv.setNumpyInstalled(true);
+    
+    vector<vector<float> > data;
     for (int c = 0; c < channels; ++c) {
         PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
-        inbuf[c] = pyArrayToFloatArray(cbuf);
-        if (!inbuf[c]) {
-            PyErr_SetString(PyExc_TypeError,"NumPy Array required for each channel in process input.");
-            return NULL;
-        }
+        data.push_back(typeConv.PyArray_To_FloatVector(cbuf));
+    }
+    
+    for (int c = 0; c < channels; ++c) {
+        inbuf[c] = &data[c][0];
     }
 
-    RealTime timeStamp = *PyRealTime_AsPointer(pyRealTime);
+    RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
 
     //Call process and store the output
     pd->output = plugin->process(inbuf, timeStamp);
@@ -547,10 +491,6 @@ vampyhost_process(PyObject *self, PyObject *args)
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
 /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
 
-
-    for (int c = 0; c < channels; ++c){
-	delete[] inbuf[c];
-    }
     delete[] inbuf;
 
     return NULL; //!!! Need to return actual features!
@@ -673,13 +613,13 @@ static PyMethodDef vampyhost_methods[] = {
      xx_foo_doc},
 
     /* Add RealTime Module Methods */
-
+/*
     {"frame2RealTime",	(PyCFunction)RealTime_frame2RealTime,	METH_VARARGS,
      PyDoc_STR("frame2RealTime((int64)frame, (uint32)sampleRate ) -> returns new RealTime object from frame.")},
 
     {"realtime",	(PyCFunction)RealTime_new,		METH_VARARGS,
      PyDoc_STR("realtime() -> returns new RealTime object")},
-
+*/
     {NULL,		NULL}		/* sentinel */
 };
 
