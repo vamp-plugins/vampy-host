@@ -4,3 +4,4 @@ syntax: glob
 *.so
 *.dll
 *.dylib
+*.pyc

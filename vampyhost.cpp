@@ -63,7 +63,6 @@ struct PyPluginData
     size_t channels;
     size_t blockSize;
     size_t stepSize;
-    Vamp::Plugin::FeatureSet output;
 };
 
 /* MODULE HELPER FUNCTIONS */
@@ -267,9 +266,6 @@ vampyhost_unloadPlugin(PyObject *self, PyObject *args)
     return pyPluginHandle;
 }
 
-
-/* INITIALISE PLUGIN */
-
 static PyObject *
 vampyhost_initialise(PyObject *self, PyObject *args)
 {
@@ -282,7 +278,7 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 			   (size_t) &blockSize))
     {
 	PyErr_SetString(PyExc_TypeError,
-			"Wrong input arguments: requires a valid plugin handle,channels,stepSize,blockSize.");
+			"initialise() takes plugin handle (object), channel count, step size, and block size arguments");
 	return 0;
     }
 
@@ -294,9 +290,9 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     pd->blockSize = blockSize;
 
     if (!pd->plugin->initialise(channels, stepSize, blockSize)) {
-        std::cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << " and ADAPT_ALL_SAFE set" << std::endl;
+        cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << " and ADAPT_ALL_SAFE set" << endl;
 	PyErr_SetString(PyExc_TypeError,
-			"Plugin initialization failed.");
+			"Plugin initialization failed");
 	return 0;
     }
 
@@ -304,8 +300,6 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 
     return Py_True;
 }
-
-/* RUN PROCESS */
 
 static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
@@ -319,12 +313,17 @@ vampyhost_process(PyObject *self, PyObject *args)
 			  &pyBuffer,			// Audio data
 			  &pyRealTime)) {		// TimeStamp
 	PyErr_SetString(PyExc_TypeError,
-			"Required: plugin handle, buffer, timestmap.");
+			"process() takes plugin handle (object), buffer (2D array of channels * samples floats) and timestamp (RealTime) arguments");
 	return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
 	PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
 	return 0; }
+
+    if (!PyList_Check(pyBuffer)) {
+	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+        return 0;
+    }
 
     PyPluginData *pd = getPluginData(pyPluginHandle);
     if (!pd) return 0;
@@ -336,15 +335,9 @@ vampyhost_process(PyObject *self, PyObject *args)
     }
 
     int channels =  pd->channels;
-//    int blockSize = pd->blockSize;
-
-    if (!PyList_Check(pyBuffer)) {
-	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
-        return 0;
-    }
 
     if (PyList_GET_SIZE(pyBuffer) != channels) {
-        std::cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << std::endl;
+        cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
 	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
         return 0;
     }
@@ -353,21 +346,30 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     PyTypeConversions typeConv;
     typeConv.setNumpyInstalled(true);
+
+    cerr << "here!"  << endl;
     
     vector<vector<float> > data;
     for (int c = 0; c < channels; ++c) {
         PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
-        data.push_back(typeConv.PyArray_To_FloatVector(cbuf));
+        data.push_back(typeConv.PyValue_To_FloatVector(cbuf));
     }
     
     for (int c = 0; c < channels; ++c) {
+        if (data[c].size() != pd->blockSize) {
+            cerr << "Wrong number of samples on channel " << c << ": expected " << pd->blockSize << " (plugin's block size), got " << data[c].size() << endl;
+            PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
+            return 0;
+        }
         inbuf[c] = &data[c][0];
     }
 
+    cerr << "no, here!"  << endl;
+
     RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
 
-    //Call process and store the output
-    pd->output = pd->plugin->process(inbuf, timeStamp);
+    // Call process and store the output
+    (void) pd->plugin->process(inbuf, timeStamp); //!!! return the output!
 
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
 /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
@@ -378,9 +380,7 @@ vampyhost_process(PyObject *self, PyObject *args)
 
 }
 
-/* GET / SET OUTPUT */
-
-//getOutput(plugin,outputNo)
+#ifdef NOPE
 static PyObject *
 vampyhost_getOutput(PyObject *self, PyObject *args) {
 
@@ -429,8 +429,8 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
 // We have the block output in pd->output
 // FeatureSet[output] -> [Feature[x]] -> Feature.hasTimestamp = v
 // Vamp::Plugin::FeatureSet output; = pd->output
-// typedef std::vector<Feature> FeatureList;
-// typedef std::map<int, FeatureList> FeatureSet; // key is output no
+// typedef vector<Feature> FeatureList;
+// typedef map<int, FeatureList> FeatureSet; // key is output no
 
     // 	THIS IS FOR OUTPUT id LOOKUP LATER
     //     Plugin::OutputList outputs = plugin->getOutputDescriptors();
@@ -451,7 +451,7 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
     //     }
 
 }
-
+#endif
 
 
 
@@ -486,8 +486,8 @@ static PyMethodDef vampyhost_methods[] = {
     {"initialise",	vampyhost_initialise, METH_VARARGS,
      xx_foo_doc},
 
-    {"getOutput",	vampyhost_getOutput, METH_VARARGS,
-     xx_foo_doc},
+//    {"getOutput",	vampyhost_getOutput, METH_VARARGS,
+//     xx_foo_doc},
 
     /* Add RealTime Module Methods */
 /*
@@ -519,7 +519,6 @@ initvampyhost(void)
 
     if (PyType_Ready(&RealTime_Type) < 0)
 	return;
-//	PyModule_AddObject(m, "Real_Time", (PyObject *)&RealTime_Type);
 
     /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
@@ -527,6 +526,5 @@ initvampyhost(void)
 
     import_array();
 
-    // PyModule_AddObject(m, "realtime", (PyObject *)&RealTime_Type);
-
+    PyModule_AddObject(m, "RealTime", (PyObject *)&RealTime_Type);
 }
