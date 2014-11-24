@@ -2,17 +2,22 @@
 
 //include for python extension module: must be first
 #include <Python.h>
+
+// define a unique API pointer 
+#define PY_ARRAY_UNIQUE_SYMBOL VAMPY_ARRAY_API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "numpy/arrayobject.h"
+
 #include <vampyhost.h>
 
-#include <PyRealTime.h>
+#include "PyTypeConversions.h"
+#include "PyRealTime.h"
 
 //!!! NB all our NumPy stuff is currently using the deprecated API --
 //!!! need to work out how to update this
 //#include "numpy/arrayobject.h"
 
 #define HAVE_NUMPY 1 // Required
-
-#include "PyTypeConversions.h"
 
 //includes for vamp host
 #include "vamp-hostsdk/Plugin.h"
@@ -626,6 +631,8 @@ static PyMethodDef vampyhost_methods[] = {
 //Documentation for our new module
 PyDoc_STRVAR(module_doc, "This is a template module just for instruction.");
 
+
+
 /* Initialization function for the module (*must* be called initxx) */
 
 //module initialization (includes extern C {...} as necessary)
@@ -645,6 +652,8 @@ initvampyhost(void)
     /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
     if (m == NULL) return;
+
+    import_array();
 
     // PyModule_AddObject(m, "realtime", (PyObject *)&RealTime_Type);
 
