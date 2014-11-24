@@ -105,53 +105,25 @@ bool getPluginHandle
   ---------------------------------------------------------------------
 */
 
-/* ENUMERATE PLUGINS*/
-
 static PyObject *
 vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
 {
-    string retType;
-
-    if (!PyArg_ParseTuple(args, "|s:enumeratePlugins", &retType))
-	return NULL;
-
-    //list available plugins
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
-
-    //library Map
-    typedef multimap<string, PluginLoader::PluginKey> LibraryMap;
-    LibraryMap libraryMap;
-
-    //New list object
-    PyObject *pyList = PyList_New(plugins.size());
-
-    for (size_t i = 0; i < plugins.size(); ++i) {
-        string path = loader->getLibraryPathForPlugin(plugins[i]);
-        libraryMap.insert(LibraryMap::value_type(path, plugins[i]));
-
-	PyObject *pyPluginKey = PyString_FromString(plugins[i].c_str());
-	PyList_SET_ITEM(pyList,i,pyPluginKey);
-
-    }
-
-    PyList_Sort(pyList);
-    return pyList;
+    PyTypeConversions conv;
+    return conv.PyValue_From_StringVector(plugins);
 }
 
-
-/* GET PLUGIN LIBRARY PATH*/
-
 static PyObject *
-vampyhost_getLibraryPath(PyObject *self, PyObject *args)
+vampyhost_getPluginPath(PyObject *self, PyObject *args)
 {
-    PyObject *pyPluginKey;
+    vector<string> path = PluginHostAdapter::getPluginPath();
+    PyTypeConversions conv;
+    return conv.PyValue_From_StringVector(path);
+}
 
-    if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
-	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginKey");
-	return NULL; }
-
+static string toPluginKey(PyObject *pyPluginKey)
+{
     //convert to stl string
     string pluginKey(PyString_AS_STRING(pyPluginKey));
 
@@ -159,18 +131,31 @@ vampyhost_getLibraryPath(PyObject *self, PyObject *args)
     string::size_type ki = pluginKey.find(':');
     if (ki == string::npos) {
 	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginLibrary:Identifier");
-       	return NULL;
+			"Plugin key must be of the form library:identifier");
+       	return "";
     }
 
+    return pluginKey;
+}
+
+static PyObject *
+vampyhost_getLibraryFor(PyObject *self, PyObject *args)
+{
+    PyObject *pyPluginKey;
+
+    if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
+	PyErr_SetString(PyExc_TypeError,
+			"getLibraryPathForPlugin() takes plugin key (string) argument");
+	return NULL; }
+
+    string pluginKey = toPluginKey(pyPluginKey);
+    if (pluginKey == "") return NULL;
+    
     PluginLoader *loader = PluginLoader::getInstance();
     string path = loader->getLibraryPathForPlugin(pluginKey);
     PyObject *pyPath = PyString_FromString(path.c_str());
     return pyPath;
 }
-
-
-/* GET PLUGIN CATEGORY*/
 
 static PyObject *
 vampyhost_getPluginCategory(PyObject *self, PyObject *args)
@@ -179,68 +164,57 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
 	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginKey");
+			"getPluginCategory() takes plugin key (string) argument");
 	return NULL; }
 
-    //convert to stl string
-    string pluginKey(PyString_AS_STRING(pyPluginKey));
-
-    //check pluginKey Validity
-    string::size_type ki = pluginKey.find(':');
-    if (ki == string::npos) {
-	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginLibrary:Identifier");
-       	return NULL;
-    }
+    string pluginKey = toPluginKey(pyPluginKey);
+    if (pluginKey == "") return NULL;
 
     PluginLoader *loader = PluginLoader::getInstance();
     PluginLoader::PluginCategoryHierarchy
 	category = loader->getPluginCategory(pluginKey);
-    string catstring;
 
-    if (!category.empty()) {
-        catstring = "";
-        for (size_t ci = 0; ci < category.size(); ++ci) {
-	    catstring.append(category[ci]);
-            catstring.append(" ");
-        }
-	PyObject *pyCat = PyString_FromString(catstring.c_str());
-	return pyCat;
-    }
-    PyObject *pyCat = PyString_FromString("");
-    return pyCat;
+    PyTypeConversions conv;
+    return conv.PyValue_From_StringVector(category);
 }
-
-
-
-/* GET PLUGIN OUTPUT LIST*/
 
 static PyObject *
 vampyhost_getOutputList(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginHandle;
-    string pluginKey;
+    Plugin::OutputList outputs;
 
     if (!PyArg_ParseTuple(args, "O", &pyPluginHandle)) {
 	PyErr_SetString(PyExc_TypeError,
-			"Invalid argument: plugin handle or plugin key required.");
+			"getOutputList() takes plugin handle (object) or plugin key (string) argument");
 	return NULL;
     }
 
-    //check if we have a plugin key string or a handle object
     if (PyString_Check(pyPluginHandle) ) {
 
-	pluginKey.assign(PyString_AS_STRING(pyPluginHandle));
-	//check pluginKey Validity
-    	string::size_type ki = pluginKey.find(':');
-    	if (ki == string::npos) {
-	    PyErr_SetString(PyExc_TypeError,
-			    "String input argument required: pluginLibrary:Identifier");
-	    return NULL;
-    	}
+        // we have a plugin key
 
+        string pluginKey = toPluginKey(pyPluginHandle);
+        if (pluginKey == "") return NULL;
+
+        PluginLoader *loader = PluginLoader::getInstance();
+
+        Plugin *plugin = loader->loadPlugin
+            (pluginKey, 48000, PluginLoader::ADAPT_ALL_SAFE);
+        if (!plugin) {
+            string pyerr("Failed to load plugin: "); pyerr += pluginKey;
+            PyErr_SetString(PyExc_TypeError,pyerr.c_str());
+            return NULL;
+        }
+
+        outputs = plugin->getOutputDescriptors();
+
+        delete plugin;
+        
     } else {
 
+        // we have a loaded plugin handle
+        
 	string *key;
 	Plugin *plugin;
 
@@ -248,46 +222,20 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
 	    PyErr_SetString(PyExc_TypeError,
 			    "Invalid or deleted plugin handle.");
 	    return NULL; }
-	pluginKey.assign(*key);
+
+        outputs = plugin->getOutputDescriptors();
     }
 
-    //This code creates new instance of the plugin anyway
-    PluginLoader *loader = PluginLoader::getInstance();
-
-    //load plugin
-    Plugin *plugin = loader->loadPlugin
-        (pluginKey, 48000, PluginLoader::ADAPT_ALL_SAFE);
-    if (!plugin) {
-	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
-	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-	return NULL;
-    }
-
-    Plugin::OutputList outputs = plugin->getOutputDescriptors();
-    //Plugin::OutputDescriptor od;
-
-    if (outputs.size()<1) {
-	string pyerr("Plugin has no output: "); pyerr += pluginKey;
-	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-	return NULL;
-    }
-
-    //New list object
     PyObject *pyList = PyList_New(outputs.size());
 
     for (size_t i = 0; i < outputs.size(); ++i) {
 	PyObject *pyOutputId =
 	    PyString_FromString(outputs[i].identifier.c_str());
-	PyList_SET_ITEM(pyList,i,pyOutputId);
+	PyList_SET_ITEM(pyList, i, pyOutputId);
     }
 
-    delete plugin;
     return pyList;
 }
-
-
-
-/* LOAD PLUGIN */
 
 static PyObject *
 vampyhost_loadPlugin(PyObject *self, PyObject *args)
@@ -299,40 +247,27 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 			  &pyPluginKey,
 			  &inputSampleRate)) {
 	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginKey");
+			"loadPlugin() takes plugin key (string) and sample rate (number) arguments");
 	return NULL; }
 
-    //convert to stl string
-    string pluginKey(PyString_AS_STRING(pyPluginKey));
-
-    //check pluginKey Validity
-    string::size_type ki = pluginKey.find(':');
-    if (ki == string::npos) {
-	PyErr_SetString(PyExc_TypeError,
-			"String input argument required: pluginLibrary:Identifier");
-       	return NULL;
-    }
+    string pluginKey = toPluginKey(pyPluginKey);
+    if (pluginKey == "") return NULL;
 
     PluginLoader *loader = PluginLoader::getInstance();
 
-    //load plugin
-    Plugin *plugin = loader->loadPlugin (pluginKey, inputSampleRate,
-                                         PluginLoader::ADAPT_ALL_SAFE);
+    Plugin *plugin = loader->loadPlugin(pluginKey, inputSampleRate,
+                                        PluginLoader::ADAPT_ALL_SAFE);
     if (!plugin) {
 	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
 	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
 	return NULL;
     }
-    //void *identifier = (void*) new string(pluginKey);
+
     PyPluginDescriptor *pd = new PyPluginDescriptor;
 
     pd->key = pluginKey;
     pd->isInitialised = false;
     pd->inputSampleRate = inputSampleRate;
-
-    //New PyCObject
-    //PyObject *pyPluginHandle = PyCObject_FromVoidPtrAndDesc(
-    //(void*) plugin, identifier, NULL);
 
     PyObject *pyPluginHandle = PyCObject_FromVoidPtrAndDesc(
 	(void*) plugin, (void*) pd, NULL);
@@ -590,10 +525,13 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
 //module methods table
 static PyMethodDef vampyhost_methods[] = {
 
-    {"enumeratePlugins",	vampyhost_enumeratePlugins,	METH_VARARGS,
+    {"enumeratePlugins",	vampyhost_enumeratePlugins,	METH_NOARGS,
      xx_foo_doc},
 
-    {"getLibraryPath",	vampyhost_getLibraryPath, METH_VARARGS,
+    {"getPluginPath",	vampyhost_getPluginPath, METH_NOARGS,
+     xx_foo_doc},
+
+    {"getLibraryForPlugin",	vampyhost_getLibraryFor, METH_VARARGS,
      xx_foo_doc},
 
     {"getPluginCategory",	vampyhost_getPluginCategory, METH_VARARGS,
