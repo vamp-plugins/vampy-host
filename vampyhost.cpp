@@ -10,13 +10,6 @@
 
 #include <vampyhost.h>
 
-#include "PyTypeConversions.h"
-#include "PyRealTime.h"
-
-//!!! NB all our NumPy stuff is currently using the deprecated API --
-//!!! need to work out how to update this
-//#include "numpy/arrayobject.h"
-
 #define HAVE_NUMPY 1 // Required
 
 //includes for vamp host
@@ -25,7 +18,9 @@
 #include "vamp-hostsdk/PluginChannelAdapter.h"
 #include "vamp-hostsdk/PluginInputDomainAdapter.h"
 #include "vamp-hostsdk/PluginLoader.h"
-//#include "vamp/vamp.h"
+
+#include "PyTypeConversions.h"
+#include "PyRealTime.h"
 
 #include <iostream>
 #include <fstream>
@@ -36,10 +31,7 @@
 #include <cstdlib>
 #include <string>
 
-#include "system.h"
-
 #include <cmath>
-
 
 using namespace std;
 using namespace Vamp;
@@ -51,59 +43,49 @@ using Vamp::HostExt::PluginLoader;
 
 #define HOST_VERSION "1.1"
 
+// structure for holding plugin instance data
+struct PyPluginData
+{
+    PyPluginData(string k, Plugin *p, float rate) :
+        key(k),
+        plugin(p),
+        inputSampleRate(rate),
+        isInitialised(false),
+        channels(0),
+        blockSize(0),
+        stepSize(0) {
+    }
+    
+    string key;
+    Plugin *plugin;
+    float inputSampleRate;
+    bool isInitialised;
+    size_t channels;
+    size_t blockSize;
+    size_t stepSize;
+    Vamp::Plugin::FeatureSet output;
+};
 
 /* MODULE HELPER FUNCTIONS */
 PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
-/*obtain C plugin handle and key from pyCobject */
-bool getPluginHandle
-(PyObject *pyPluginHandle, Plugin **plugin, string **pKey=NULL) {
+//!!! nb "The CObject API is deprecated" https://docs.python.org/2/c-api/cobject.html
 
-    //char errormsg[]="Wrong input argument: Plugin Handle required.";
-
-    *plugin = NULL;
-    if (!PyCObject_Check(pyPluginHandle)) return false;
-
-    //try to convert to Plugin pointer
-    Plugin *p = (Plugin*) PyCObject_AsVoidPtr(pyPluginHandle);
-    if (!p) return false;
-
-    string pId;
-
-    if (pKey) {
-	*pKey = (string*) PyCObject_GetDesc(pyPluginHandle);
-	if (!*pKey) return false;
-	pId = *(string*) *pKey;
-
-    } else {
-
-	void *pKey = PyCObject_GetDesc(pyPluginHandle);
-	if (!pKey) return false;
-	pId = *(string*) pKey;
+PyPluginData *
+getPluginData(PyObject *pyPluginHandle)
+{
+    PyPluginData *pd = 0;
+    if (PyCObject_Check(pyPluginHandle)) {
+        pd = (PyPluginData *)PyCObject_AsVoidPtr(pyPluginHandle);
     }
-
-    string::size_type pos = pId.find(':');
-    if (pos == string::npos) return false;
-
-    pId = pId.substr(pId.rfind(':')+1);
-    string identifier = p->getIdentifier();
-
-    if (pId.compare(identifier)) return false;
-
-    *plugin = p;
-    return true;
+    if (!pd || !pd->plugin) {
+        PyErr_SetString(PyExc_AttributeError,
+			"Invalid or already deleted plugin handle.");
+        return 0;
+    } else {
+        return pd;
+    }
 }
-
-/*
-  ----------------------------------------------------------------
-*/
-
-
-
-/*
-  VAMPYHOST MAIN
-  ---------------------------------------------------------------------
-*/
 
 static PyObject *
 vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
@@ -146,10 +128,10 @@ vampyhost_getLibraryFor(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
 	PyErr_SetString(PyExc_TypeError,
 			"getLibraryPathForPlugin() takes plugin key (string) argument");
-	return NULL; }
+	return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
-    if (pluginKey == "") return NULL;
+    if (pluginKey == "") return 0;
     
     PluginLoader *loader = PluginLoader::getInstance();
     string path = loader->getLibraryPathForPlugin(pluginKey);
@@ -165,10 +147,10 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
 	PyErr_SetString(PyExc_TypeError,
 			"getPluginCategory() takes plugin key (string) argument");
-	return NULL; }
+	return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
-    if (pluginKey == "") return NULL;
+    if (pluginKey == "") return 0;
 
     PluginLoader *loader = PluginLoader::getInstance();
     PluginLoader::PluginCategoryHierarchy
@@ -181,21 +163,21 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getOutputList(PyObject *self, PyObject *args)
 {
-    PyObject *pyPluginHandle;
+    PyObject *keyOrHandle;
     Plugin::OutputList outputs;
 
-    if (!PyArg_ParseTuple(args, "O", &pyPluginHandle)) {
+    if (!PyArg_ParseTuple(args, "O", &keyOrHandle)) {
 	PyErr_SetString(PyExc_TypeError,
 			"getOutputList() takes plugin handle (object) or plugin key (string) argument");
-	return NULL;
+	return 0;
     }
 
-    if (PyString_Check(pyPluginHandle) ) {
+    if (PyString_Check(keyOrHandle) ) {
 
         // we have a plugin key
 
-        string pluginKey = toPluginKey(pyPluginHandle);
-        if (pluginKey == "") return NULL;
+        string pluginKey = toPluginKey(keyOrHandle);
+        if (pluginKey == "") return 0;
 
         PluginLoader *loader = PluginLoader::getInstance();
 
@@ -204,7 +186,7 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
         if (!plugin) {
             string pyerr("Failed to load plugin: "); pyerr += pluginKey;
             PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-            return NULL;
+            return 0;
         }
 
         outputs = plugin->getOutputDescriptors();
@@ -215,15 +197,10 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
 
         // we have a loaded plugin handle
         
-	string *key;
-	Plugin *plugin;
+        PyPluginData *pd = getPluginData(keyOrHandle);
+        if (!pd) return 0;
 
-	if ( !getPluginHandle(pyPluginHandle, &plugin, &key) ) {
-	    PyErr_SetString(PyExc_TypeError,
-			    "Invalid or deleted plugin handle.");
-	    return NULL; }
-
-        outputs = plugin->getOutputDescriptors();
+        outputs = pd->plugin->getOutputDescriptors();
     }
 
     PyObject *pyList = PyList_New(outputs.size());
@@ -248,10 +225,10 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 			  &inputSampleRate)) {
 	PyErr_SetString(PyExc_TypeError,
 			"loadPlugin() takes plugin key (string) and sample rate (number) arguments");
-	return NULL; }
+	return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
-    if (pluginKey == "") return NULL;
+    if (pluginKey == "") return 0;
 
     PluginLoader *loader = PluginLoader::getInstance();
 
@@ -260,24 +237,12 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
     if (!plugin) {
 	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
 	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-	return NULL;
+	return 0;
     }
 
-    PyPluginDescriptor *pd = new PyPluginDescriptor;
-
-    pd->key = pluginKey;
-    pd->isInitialised = false;
-    pd->inputSampleRate = inputSampleRate;
-
-    PyObject *pyPluginHandle = PyCObject_FromVoidPtrAndDesc(
-	(void*) plugin, (void*) pd, NULL);
-
-    return pyPluginHandle;
+    PyPluginData *pd = new PyPluginData(pluginKey, plugin, inputSampleRate);
+    return PyCObject_FromVoidPtr(pd, 0);
 }
-
-
-
-/* UNLOAD PLUGIN */
 
 static PyObject *
 vampyhost_unloadPlugin(PyObject *self, PyObject *args)
@@ -286,27 +251,20 @@ vampyhost_unloadPlugin(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O", &pyPluginHandle)) {
 	PyErr_SetString(PyExc_TypeError,
-			"Wrong input argument: Plugin Handle required.");
-	return NULL; }
+			"unloadPlugin() takes plugin handle (object) argument");
+	return 0;
+    }
 
-    string *key;
-    Plugin *plugin;
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
 
-    if ( !getPluginHandle(pyPluginHandle, &plugin, &key) ) {
-	PyErr_SetString(PyExc_TypeError,
-			"Invalid or already deleted plugin handle.");
-	return NULL; }
+    /* Prevent repeated calls from causing segfault since it will fail
+     * type checking the 2nd time: */
+    PyCObject_SetVoidPtr(pyPluginHandle, 0);
 
-/*	Prevent repeated calls from causing segfault
-	sice it will fail type checking the 2nd time:						*/
-    PyCObject_SetVoidPtr(pyPluginHandle,NULL);
-
-    PyPluginDescriptor *pd = (PyPluginDescriptor*) key;
-
-    delete plugin;
+    delete pd->plugin;
     delete pd;
     return pyPluginHandle;
-
 }
 
 
@@ -325,34 +283,24 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     {
 	PyErr_SetString(PyExc_TypeError,
 			"Wrong input arguments: requires a valid plugin handle,channels,stepSize,blockSize.");
-	return NULL;
+	return 0;
     }
 
-    Plugin *plugin;
-    string *key;
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
 
-    if ( !getPluginHandle(pyPluginHandle, &plugin, &key) ) {
-	PyErr_SetString(PyExc_TypeError,
-			"Invalid plugin handle.");
-	return NULL; }
+    pd->channels = channels;
+    pd->stepSize = stepSize;
+    pd->blockSize = blockSize;
 
-    // here we cast the void pointer as PyPluginDescriptor instead of string
-    PyPluginDescriptor *plugDesc = (PyPluginDescriptor*) key;
-
-    plugDesc->channels = channels;
-    plugDesc->stepSize = stepSize;
-    plugDesc->blockSize = blockSize;
-
-    if (!plugin->initialise(channels, stepSize, blockSize)) {
+    if (!pd->plugin->initialise(channels, stepSize, blockSize)) {
         std::cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << " and ADAPT_ALL_SAFE set" << std::endl;
 	PyErr_SetString(PyExc_TypeError,
 			"Plugin initialization failed.");
-	return NULL;
+	return 0;
     }
 
-    plugDesc->identifier =
-	plugDesc->key.substr(plugDesc->key.rfind(':')+1);
-    plugDesc->isInitialised = true;
+    pd->isInitialised = true;
 
     return Py_True;
 }
@@ -372,40 +320,33 @@ vampyhost_process(PyObject *self, PyObject *args)
 			  &pyRealTime)) {		// TimeStamp
 	PyErr_SetString(PyExc_TypeError,
 			"Required: plugin handle, buffer, timestmap.");
-	return NULL; }
+	return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
 	PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
-	return NULL; }
+	return 0; }
 
-    string *key;
-    Plugin *plugin;
-
-    if (!getPluginHandle(pyPluginHandle, &plugin, &key)) {
-	PyErr_SetString(PyExc_AttributeError,
-			"Invalid or already deleted plugin handle.");
-	return NULL;
-    }
-
-    PyPluginDescriptor *pd = (PyPluginDescriptor*) key;
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
 
     if (!pd->isInitialised) {
 	PyErr_SetString(PyExc_StandardError,
 			"Plugin has not been initialised.");
-	return NULL; }
+	return 0;
+    }
 
     int channels =  pd->channels;
 //    int blockSize = pd->blockSize;
 
     if (!PyList_Check(pyBuffer)) {
 	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
-        return NULL;
+        return 0;
     }
 
     if (PyList_GET_SIZE(pyBuffer) != channels) {
         std::cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << std::endl;
 	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
-        return NULL;
+        return 0;
     }
 
     float **inbuf = new float *[channels];
@@ -426,14 +367,14 @@ vampyhost_process(PyObject *self, PyObject *args)
     RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
 
     //Call process and store the output
-    pd->output = plugin->process(inbuf, timeStamp);
+    pd->output = pd->plugin->process(inbuf, timeStamp);
 
     /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
 /// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
 
     delete[] inbuf;
 
-    return NULL; //!!! Need to return actual features!
+    return 0; //!!! Need to return actual features!
 
 }
 
@@ -453,17 +394,10 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
 			  &pyOutput)) {		// Output reference
 	PyErr_SetString(PyExc_TypeError,
 			"Required: plugin handle, buffer, timestmap.");
-	return NULL; }
+	return 0; }
 
-    string *key;
-    Plugin *plugin;
-
-    if ( !getPluginHandle(pyPluginHandle, &plugin, &key) ) {
-	PyErr_SetString(PyExc_AttributeError,
-			"Invalid or already deleted plugin handle.");
-	return NULL; }
-
-    PyPluginDescriptor *pd = (PyPluginDescriptor*) key;
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
 
     unsigned int outputNo = (unsigned int) PyInt_AS_LONG(pyOutput);
 
@@ -479,9 +413,9 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
 	// Test:
 	/*
 	  XxoObject *pyFeature = PyObject_New(XxoObject, &Xxo_Type);
-	  if (pyFeature == NULL) break; //return NULL;
+	  if (pyFeature == 0) break; //return 0;
 
-	  pyFeature->x_attr = NULL;
+	  pyFeature->x_attr = 0;
 	  pyFeature->feature = &pd->output[outputNo][i];
 
 	  PyList_SET_ITEM(pyFeatureList,i,(PyObject*)pyFeature);
@@ -504,7 +438,7 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
     // if (outputs.size()<1) {
     // 	string pyerr("Plugin has no output: "); pyerr += pluginKey;
     // 	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-    // 	return NULL;
+    // 	return 0;
     // }
     //
     // //New list object
@@ -563,7 +497,7 @@ static PyMethodDef vampyhost_methods[] = {
     {"realtime",	(PyCFunction)RealTime_new,		METH_VARARGS,
      PyDoc_STR("realtime() -> returns new RealTime object")},
 */
-    {NULL,		NULL}		/* sentinel */
+    {0,		0}		/* sentinel */
 };
 
 //Documentation for our new module
@@ -589,7 +523,7 @@ initvampyhost(void)
 
     /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
-    if (m == NULL) return;
+    if (!m) return;
 
     import_array();
 
