@@ -302,6 +302,31 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+vampyhost_reset(PyObject *self, PyObject *args)
+{
+    PyObject *pyPluginHandle;
+
+    if (!PyArg_ParseTuple (args, "O",  &pyPluginHandle))
+    {
+	PyErr_SetString(PyExc_TypeError,
+			"initialise() takes plugin handle (object) argument");
+	return 0;
+    }
+
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
+
+    if (!pd->isInitialised) {
+        PyErr_SetString(PyExc_StandardError,
+                        "Plugin has not been initialised");
+        return 0;
+    }
+        
+    pd->plugin->reset();
+    return Py_True;
+}
+
+static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginHandle;
@@ -368,16 +393,62 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
 
-    // Call process and store the output
-    (void) pd->plugin->process(inbuf, timeStamp); //!!! return the output!
+    cerr << "no no, here!"  << endl;
 
-    /* TODO:  DO SOMETHONG WITH THE FEATURE SET HERE */
-/// convert to appropriate python objects, reuse types and conversion utilities from Vampy ...
+    Plugin::FeatureSet fs = pd->plugin->process(inbuf, timeStamp);
 
     delete[] inbuf;
 
-    return 0; //!!! Need to return actual features!
+    cerr << "no no no, here!"  << endl;
+    
+    PyTypeConversions conv;
+    conv.setNumpyInstalled(true);
+    
+    PyObject *pyFs = PyDict_New();
 
+    for (Plugin::FeatureSet::const_iterator fsi = fs.begin();
+         fsi != fs.end(); ++fsi) {
+
+        int fno = fsi->first;
+        const Plugin::FeatureList &fl = fsi->second;
+
+        if (!fl.empty()) {
+
+            PyObject *pyFl = PyList_New(fl.size());
+
+            for (int fli = 0; fli < (int)fl.size(); ++fli) {
+
+                const Plugin::Feature &f = fl[fli];
+                PyObject *pyF = PyDict_New();
+
+                if (f.hasTimestamp) {
+                    PyDict_SetItemString
+                        (pyF, "timestamp", PyRealTime_FromRealTime(f.timestamp));
+                }
+                if (f.hasDuration) {
+                    PyDict_SetItemString
+                        (pyF, "duration", PyRealTime_FromRealTime(f.duration));
+                }
+
+                PyDict_SetItemString
+                    (pyF, "label", PyString_FromString(f.label.c_str()));
+
+                if (!f.values.empty()) {
+                    PyDict_SetItemString
+                        (pyF, "values", conv.FloatVector_To_PyArray(f.values));
+                }
+
+                PyList_SET_ITEM(pyFl, fli, pyF);
+            }
+
+            PyObject *pyN = PyInt_FromLong(fno);
+            PyDict_SetItem(pyFs, pyN, pyFl);
+        }
+    }
+
+    cerr << "no you fool, here!"  << endl;
+    
+    return pyFs;
 }
 
 #ifdef NOPE
@@ -454,27 +525,31 @@ vampyhost_getOutput(PyObject *self, PyObject *args) {
 #endif
 
 
-
-/* List of functions defined in this module */
-//module methods table
+// module methods table
 static PyMethodDef vampyhost_methods[] = {
 
-    {"enumeratePlugins",	vampyhost_enumeratePlugins,	METH_NOARGS,
+    {"listPlugins",	vampyhost_enumeratePlugins,	METH_NOARGS,
      xx_foo_doc},
 
     {"getPluginPath",	vampyhost_getPluginPath, METH_NOARGS,
      xx_foo_doc},
 
-    {"getLibraryForPlugin",	vampyhost_getLibraryFor, METH_VARARGS,
+    {"getCategoryOf",	vampyhost_getPluginCategory, METH_VARARGS,
      xx_foo_doc},
 
-    {"getPluginCategory",	vampyhost_getPluginCategory, METH_VARARGS,
+    {"getLibraryFor",	vampyhost_getLibraryFor, METH_VARARGS,
      xx_foo_doc},
 
-    {"getOutputList",	vampyhost_getOutputList, METH_VARARGS,
+    {"getOutputsOf",	vampyhost_getOutputList, METH_VARARGS,
      xx_foo_doc},
 
     {"loadPlugin",	vampyhost_loadPlugin, METH_VARARGS,
+     xx_foo_doc},
+
+    {"initialise",	vampyhost_initialise, METH_VARARGS,
+     xx_foo_doc},
+
+    {"reset",	vampyhost_reset, METH_VARARGS,
      xx_foo_doc},
 
     {"process",	vampyhost_process, METH_VARARGS,
@@ -483,20 +558,6 @@ static PyMethodDef vampyhost_methods[] = {
     {"unloadPlugin",	vampyhost_unloadPlugin, METH_VARARGS,
      xx_foo_doc},
 
-    {"initialise",	vampyhost_initialise, METH_VARARGS,
-     xx_foo_doc},
-
-//    {"getOutput",	vampyhost_getOutput, METH_VARARGS,
-//     xx_foo_doc},
-
-    /* Add RealTime Module Methods */
-/*
-    {"frame2RealTime",	(PyCFunction)RealTime_frame2RealTime,	METH_VARARGS,
-     PyDoc_STR("frame2RealTime((int64)frame, (uint32)sampleRate ) -> returns new RealTime object from frame.")},
-
-    {"realtime",	(PyCFunction)RealTime_new,		METH_VARARGS,
-     PyDoc_STR("realtime() -> returns new RealTime object")},
-*/
     {0,		0}		/* sentinel */
 };
 
