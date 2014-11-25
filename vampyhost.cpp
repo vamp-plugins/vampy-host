@@ -223,7 +223,7 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 			  &pyPluginKey,
 			  &inputSampleRate)) {
 	PyErr_SetString(PyExc_TypeError,
-			"loadPlugin() takes plugin key (string) and sample rate (number) arguments");
+			"loadPlugin() takes plugin key (string) and sample rate (float) arguments");
 	return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
@@ -323,6 +323,43 @@ vampyhost_reset(PyObject *self, PyObject *args)
     }
         
     pd->plugin->reset();
+    return Py_True;
+}
+
+static PyObject *
+vampyhost_getParameter(PyObject *self, PyObject *args)
+{
+    PyObject *pyPluginHandle;
+    PyObject *pyParam;
+
+    if (!PyArg_ParseTuple(args, "OS", &pyPluginHandle, &pyParam)) {
+	PyErr_SetString(PyExc_TypeError,
+			"getParameter() takes plugin handle (object) and parameter id (string) arguments");
+	return 0; }
+
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
+
+    float value = pd->plugin->getParameter(PyString_AS_STRING(pyParam));
+    return PyFloat_FromDouble(double(value));
+}
+
+static PyObject *
+vampyhost_setParameter(PyObject *self, PyObject *args)
+{
+    PyObject *pyPluginHandle;
+    PyObject *pyParam;
+    float value;
+
+    if (!PyArg_ParseTuple(args, "OSf", &pyPluginHandle, &pyParam, &value)) {
+	PyErr_SetString(PyExc_TypeError,
+			"setParameter() takes plugin handle (object), parameter id (string), and value (float) arguments");
+	return 0; }
+
+    PyPluginData *pd = getPluginData(pyPluginHandle);
+    if (!pd) return 0;
+
+    pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
     return Py_True;
 }
 
@@ -451,79 +488,6 @@ vampyhost_process(PyObject *self, PyObject *args)
     return pyFs;
 }
 
-#ifdef NOPE
-static PyObject *
-vampyhost_getOutput(PyObject *self, PyObject *args) {
-
-    PyObject *pyPluginHandle;
-//	PyObject *pyBuffer;
-//	PyObject *pyRealTime;
-    PyObject *pyOutput;
-
-    if (!PyArg_ParseTuple(args, "OO",
-			  &pyPluginHandle,	// C object holding a pointer to a plugin and its descriptor
-			  &pyOutput)) {		// Output reference
-	PyErr_SetString(PyExc_TypeError,
-			"Required: plugin handle, buffer, timestmap.");
-	return 0; }
-
-    PyPluginData *pd = getPluginData(pyPluginHandle);
-    if (!pd) return 0;
-
-    unsigned int outputNo = (unsigned int) PyInt_AS_LONG(pyOutput);
-
-    //Get output list: but we don't need it
-    //Plugin::FeatureList features = pd->output[outputNo];
-
-    size_t outLength = pd->output[outputNo].size();
-
-    //New PyList for the featurelist
-    PyObject *pyFeatureList = PyList_New(outLength);
-
-    for (size_t i = 0; i < outLength; ++i) {
-	// Test:
-	/*
-	  XxoObject *pyFeature = PyObject_New(XxoObject, &Xxo_Type);
-	  if (pyFeature == 0) break; //return 0;
-
-	  pyFeature->x_attr = 0;
-	  pyFeature->feature = &pd->output[outputNo][i];
-
-	  PyList_SET_ITEM(pyFeatureList,i,(PyObject*)pyFeature);
-	*/
-    }
-
-    Py_INCREF(pyFeatureList);
-    return pyFeatureList;
-
-// EXPLAIN WHAT WE NEED TO DO HERE:
-// We have the block output in pd->output
-// FeatureSet[output] -> [Feature[x]] -> Feature.hasTimestamp = v
-// Vamp::Plugin::FeatureSet output; = pd->output
-// typedef vector<Feature> FeatureList;
-// typedef map<int, FeatureList> FeatureSet; // key is output no
-
-    // 	THIS IS FOR OUTPUT id LOOKUP LATER
-    //     Plugin::OutputList outputs = plugin->getOutputDescriptors();
-    //
-    // if (outputs.size()<1) {
-    // 	string pyerr("Plugin has no output: "); pyerr += pluginKey;
-    // 	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-    // 	return 0;
-    // }
-    //
-    // //New list object
-    // PyObject *pyList = PyList_New(outputs.size());
-    //
-    //     for (size_t i = 0; i < outputs.size(); ++i) {
-    // 	PyObject *pyOutputId =
-    // 	PyString_FromString(outputs[i].identifier.c_str());
-    // 	PyList_SET_ITEM(pyList,i,pyOutputId);
-    //     }
-
-}
-#endif
-
 
 // module methods table
 static PyMethodDef vampyhost_methods[] = {
@@ -544,6 +508,12 @@ static PyMethodDef vampyhost_methods[] = {
      xx_foo_doc},
 
     {"loadPlugin",	vampyhost_loadPlugin, METH_VARARGS,
+     xx_foo_doc},
+
+    {"getParameter",	vampyhost_getParameter, METH_VARARGS,
+     xx_foo_doc},
+
+    {"setParameter",	vampyhost_setParameter, METH_VARARGS,
      xx_foo_doc},
 
     {"initialise",	vampyhost_initialise, METH_VARARGS,
