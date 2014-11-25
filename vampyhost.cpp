@@ -47,17 +47,6 @@ using Vamp::HostExt::PluginLoader;
 struct PyPluginObject
 {
     PyObject_HEAD
-    /*    
-    PyPluginData(string k, Plugin *p, float rate) :
-        key(k),
-        plugin(p),
-        inputSampleRate(rate),
-        isInitialised(false),
-        channels(0),
-        blockSize(0),
-        stepSize(0) {
-    }
-    */    
     string *key;
     Plugin *plugin;
     float inputSampleRate;
@@ -80,7 +69,6 @@ PyPluginObject_dealloc(PyPluginObject *self)
     PyObject_Del(self);
 }
 
-/* MODULE HELPER FUNCTIONS */
 PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
 PyPluginObject *
@@ -102,7 +90,7 @@ getPluginObject(PyObject *pyPluginHandle)
 }
 
 static PyObject *
-vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
+vampyhost_enumeratePlugins(PyObject *self, PyObject *)
 {
     cerr << "vampyhost_enumeratePlugins" << endl;
 
@@ -113,7 +101,7 @@ vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_getPluginPath(PyObject *self, PyObject *args)
+vampyhost_getPluginPath(PyObject *self, PyObject *)
 {
     cerr << "vampyhost_getPluginPath" << endl;
 
@@ -284,20 +272,18 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 {
     cerr << "vampyhost_initialise" << endl;
     
-    PyObject *pyPluginHandle;
     size_t channels, blockSize, stepSize;
 
-    if (!PyArg_ParseTuple (args, "Onnn",  &pyPluginHandle,
+    if (!PyArg_ParseTuple (args, "nnn",
 			   (size_t) &channels,
 			   (size_t) &stepSize,
-			   (size_t) &blockSize))
-    {
+			   (size_t) &blockSize)) {
 	PyErr_SetString(PyExc_TypeError,
-			"initialise() takes plugin handle (object), channel count, step size, and block size arguments");
+			"initialise() takes channel count, step size, and block size arguments");
 	return 0;
     }
 
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     pd->channels = channels;
@@ -317,20 +303,11 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_reset(PyObject *self, PyObject *args)
+vampyhost_reset(PyObject *self, PyObject *)
 {
     cerr << "vampyhost_reset" << endl;
     
-    PyObject *pyPluginHandle;
-
-    if (!PyArg_ParseTuple (args, "O",  &pyPluginHandle))
-    {
-	PyErr_SetString(PyExc_TypeError,
-			"initialise() takes plugin handle (object) argument");
-	return 0;
-    }
-
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
@@ -348,15 +325,14 @@ vampyhost_getParameter(PyObject *self, PyObject *args)
 {
     cerr << "vampyhost_getParameter" << endl;
 
-    PyObject *pyPluginHandle;
     PyObject *pyParam;
 
-    if (!PyArg_ParseTuple(args, "OS", &pyPluginHandle, &pyParam)) {
+    if (!PyArg_ParseTuple(args, "S", &pyParam)) {
 	PyErr_SetString(PyExc_TypeError,
-			"getParameter() takes plugin handle (object) and parameter id (string) arguments");
+			"getParameter() takes parameter id (string) argument");
 	return 0; }
 
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     float value = pd->plugin->getParameter(PyString_AS_STRING(pyParam));
@@ -368,16 +344,15 @@ vampyhost_setParameter(PyObject *self, PyObject *args)
 {
     cerr << "vampyhost_setParameter" << endl;
 
-    PyObject *pyPluginHandle;
     PyObject *pyParam;
     float value;
 
-    if (!PyArg_ParseTuple(args, "OSf", &pyPluginHandle, &pyParam, &value)) {
+    if (!PyArg_ParseTuple(args, "Sf", &pyParam, &value)) {
 	PyErr_SetString(PyExc_TypeError,
-			"setParameter() takes plugin handle (object), parameter id (string), and value (float) arguments");
+			"setParameter() takes parameter id (string), and value (float) arguments");
 	return 0; }
 
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
@@ -389,12 +364,10 @@ vampyhost_process(PyObject *self, PyObject *args)
 {
     cerr << "vampyhost_process" << endl;
 
-    PyObject *pyPluginHandle;
     PyObject *pyBuffer;
     PyObject *pyRealTime;
 
-    if (!PyArg_ParseTuple(args, "OOO",
-			  &pyPluginHandle,	// C object holding a pointer to a plugin and its descriptor
+    if (!PyArg_ParseTuple(args, "OO",
 			  &pyBuffer,			// Audio data
 			  &pyRealTime)) {		// TimeStamp
 	PyErr_SetString(PyExc_TypeError,
@@ -410,7 +383,7 @@ vampyhost_process(PyObject *self, PyObject *args)
         return 0;
     }
 
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
@@ -511,10 +484,55 @@ vampyhost_process(PyObject *self, PyObject *args)
     return pyFs;
 }
 
+static PyObject *
+vampyhost_unload(PyObject *self, PyObject *)
+{
+    cerr << "vampyhost_unloadPlugin" << endl;
+    
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    delete pd->plugin;
+    pd->plugin = 0; // This is checked by getPluginObject, so we 
+                    // attempt to avoid repeated calls from blowing up
+
+    return Py_True;
+}
+
 static PyMethodDef PyPluginObject_methods[] =
 {
+    {"getParameter",	vampyhost_getParameter, METH_VARARGS,
+     xx_foo_doc}, //!!! fix all these!
+
+    {"setParameter",	vampyhost_setParameter, METH_VARARGS,
+     xx_foo_doc},
+
+    {"initialise",	vampyhost_initialise, METH_VARARGS,
+     xx_foo_doc},
+
+    {"reset",	vampyhost_reset, METH_NOARGS,
+     xx_foo_doc},
+
+    {"process",	vampyhost_process, METH_VARARGS,
+     xx_foo_doc},
+
+    {"unload", vampyhost_unload, METH_NOARGS,
+     xx_foo_doc},
+    
     {0, 0}
 };
+
+static int
+PyPluginObject_setattr(PyPluginObject *self, char *name, PyObject *value)
+{
+    return -1;
+}
+
+static PyObject *
+PyPluginObject_getattr(PyPluginObject *self, char *name)
+{
+    return Py_FindMethod(PyPluginObject_methods, (PyObject *)self, name);
+}
 
 /* Doc:: 10.3 Type Objects */ /* static */ 
 PyTypeObject Plugin_Type = 
@@ -526,8 +544,8 @@ PyTypeObject Plugin_Type =
     0,		/*tp_itemsize*/
     (destructor)PyPluginObject_dealloc, /*tp_dealloc*/
     0,						/*tp_print*/
-    0, /*tp_getattr*/
-    0, /*tp_setattr*/
+    (getattrfunc)PyPluginObject_getattr, /*tp_getattr*/
+    (setattrfunc)PyPluginObject_setattr, /*tp_setattr*/
     0,						/*tp_compare*/
     0,			/*tp_repr*/
     0,	/*tp_as_number*/
@@ -581,21 +599,6 @@ static PyMethodDef vampyhost_methods[] = {
      xx_foo_doc},
 
     {"loadPlugin",	vampyhost_loadPlugin, METH_VARARGS,
-     xx_foo_doc},
-
-    {"getParameter",	vampyhost_getParameter, METH_VARARGS,
-     xx_foo_doc},
-
-    {"setParameter",	vampyhost_setParameter, METH_VARARGS,
-     xx_foo_doc},
-
-    {"initialise",	vampyhost_initialise, METH_VARARGS,
-     xx_foo_doc},
-
-    {"reset",	vampyhost_reset, METH_VARARGS,
-     xx_foo_doc},
-
-    {"process",	vampyhost_process, METH_VARARGS,
      xx_foo_doc},
 
     {0,		0}		/* sentinel */
