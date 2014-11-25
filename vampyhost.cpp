@@ -280,29 +280,6 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_unloadPlugin(PyObject *self, PyObject *args)
-{
-    cerr << "vampyhost_unloadPlugin" << endl;
-    
-    PyObject *pyPluginHandle;
-
-    if (!PyArg_ParseTuple(args, "O", &pyPluginHandle)) {
-	PyErr_SetString(PyExc_TypeError,
-			"unloadPlugin() takes plugin handle (object) argument");
-	return 0;
-    }
-
-    PyPluginObject *pd = getPluginObject(pyPluginHandle);
-    if (!pd) return 0;
-
-    delete pd->plugin;
-    pd->plugin = 0; // This is checked by getPluginObject, so we 
-                    // attempt to avoid repeated calls from blowing up
-
-    return Py_True;
-}
-
-static PyObject *
 vampyhost_initialise(PyObject *self, PyObject *args)
 {
     cerr << "vampyhost_initialise" << endl;
@@ -619,9 +596,6 @@ static PyMethodDef vampyhost_methods[] = {
      xx_foo_doc},
 
     {"process",	vampyhost_process, METH_VARARGS,
-     xx_foo_doc},
-
-    {"unloadPlugin",	vampyhost_unloadPlugin, METH_VARARGS,
      xx_foo_doc},
 
     {0,		0}		/* sentinel */
