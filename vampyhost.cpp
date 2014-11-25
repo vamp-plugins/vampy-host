@@ -44,8 +44,10 @@ using Vamp::HostExt::PluginLoader;
 #define HOST_VERSION "1.1"
 
 // structure for holding plugin instance data
-struct PyPluginData
+struct PyPluginObject
 {
+    PyObject_HEAD
+    /*    
     PyPluginData(string k, Plugin *p, float rate) :
         key(k),
         plugin(p),
@@ -55,27 +57,40 @@ struct PyPluginData
         blockSize(0),
         stepSize(0) {
     }
-    
-    string key;
+    */    
+    string *key;
     Plugin *plugin;
     float inputSampleRate;
     bool isInitialised;
     size_t channels;
     size_t blockSize;
     size_t stepSize;
+    static PyPluginObject *create_internal();
 };
+
+PyAPI_DATA(PyTypeObject) Plugin_Type;
+#define PyPlugin_Check(v) PyObject_TypeCheck(v, &Plugin_Type)
+    
+static void
+PyPluginObject_dealloc(PyPluginObject *self)
+{
+    cerr << "PyPluginObject_dealloc" << endl;
+    delete self->key;
+    delete self->plugin;
+    PyObject_Del(self);
+}
 
 /* MODULE HELPER FUNCTIONS */
 PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
-//!!! nb "The CObject API is deprecated" https://docs.python.org/2/c-api/cobject.html
-
-PyPluginData *
-getPluginData(PyObject *pyPluginHandle)
+PyPluginObject *
+getPluginObject(PyObject *pyPluginHandle)
 {
-    PyPluginData *pd = 0;
-    if (PyCObject_Check(pyPluginHandle)) {
-        pd = (PyPluginData *)PyCObject_AsVoidPtr(pyPluginHandle);
+    cerr << "getPluginObject" << endl;
+
+    PyPluginObject *pd = 0;
+    if (PyPlugin_Check(pyPluginHandle)) {
+        pd = (PyPluginObject *)pyPluginHandle;
     }
     if (!pd || !pd->plugin) {
         PyErr_SetString(PyExc_AttributeError,
@@ -89,6 +104,8 @@ getPluginData(PyObject *pyPluginHandle)
 static PyObject *
 vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_enumeratePlugins" << endl;
+
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
     PyTypeConversions conv;
@@ -98,6 +115,8 @@ vampyhost_enumeratePlugins(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getPluginPath(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_getPluginPath" << endl;
+
     vector<string> path = PluginHostAdapter::getPluginPath();
     PyTypeConversions conv;
     return conv.PyValue_From_StringVector(path);
@@ -105,6 +124,8 @@ vampyhost_getPluginPath(PyObject *self, PyObject *args)
 
 static string toPluginKey(PyObject *pyPluginKey)
 {
+    cerr << "toPluginKey" << endl;
+
     //convert to stl string
     string pluginKey(PyString_AS_STRING(pyPluginKey));
 
@@ -122,6 +143,8 @@ static string toPluginKey(PyObject *pyPluginKey)
 static PyObject *
 vampyhost_getLibraryFor(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_getLibraryFor" << endl;
+
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
@@ -141,6 +164,8 @@ vampyhost_getLibraryFor(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_getPluginCategory" << endl;
+
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
@@ -162,6 +187,8 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getOutputList(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_getOutputList" << endl;
+
     PyObject *keyOrHandle;
     Plugin::OutputList outputs;
 
@@ -196,7 +223,7 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
 
         // we have a loaded plugin handle
         
-        PyPluginData *pd = getPluginData(keyOrHandle);
+        PyPluginObject *pd = getPluginObject(keyOrHandle);
         if (!pd) return 0;
 
         outputs = pd->plugin->getOutputDescriptors();
@@ -216,6 +243,8 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_loadPlugin(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_loadPlugin" << endl;
+
     PyObject *pyPluginKey;
     float inputSampleRate;
 
@@ -239,13 +268,22 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 	return 0;
     }
 
-    PyPluginData *pd = new PyPluginData(pluginKey, plugin, inputSampleRate);
-    return PyCObject_FromVoidPtr(pd, 0);
+    PyPluginObject *pd = PyPluginObject::create_internal();
+    pd->key = new string(pluginKey);
+    pd->plugin = plugin;
+    pd->inputSampleRate = inputSampleRate;
+    pd->isInitialised = false;
+    pd->channels = 0;
+    pd->blockSize = 0;
+    pd->stepSize = 0;
+    return (PyObject *)pd;
 }
 
 static PyObject *
 vampyhost_unloadPlugin(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_unloadPlugin" << endl;
+    
     PyObject *pyPluginHandle;
 
     if (!PyArg_ParseTuple(args, "O", &pyPluginHandle)) {
@@ -254,21 +292,21 @@ vampyhost_unloadPlugin(PyObject *self, PyObject *args)
 	return 0;
     }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
-    /* Prevent repeated calls from causing segfault since it will fail
-     * type checking the 2nd time: */
-    PyCObject_SetVoidPtr(pyPluginHandle, 0);
-
     delete pd->plugin;
-    delete pd;
-    return pyPluginHandle;
+    pd->plugin = 0; // This is checked by getPluginObject, so we 
+                    // attempt to avoid repeated calls from blowing up
+
+    return Py_True;
 }
 
 static PyObject *
 vampyhost_initialise(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_initialise" << endl;
+    
     PyObject *pyPluginHandle;
     size_t channels, blockSize, stepSize;
 
@@ -282,7 +320,7 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 	return 0;
     }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
     pd->channels = channels;
@@ -304,6 +342,8 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_reset(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_reset" << endl;
+    
     PyObject *pyPluginHandle;
 
     if (!PyArg_ParseTuple (args, "O",  &pyPluginHandle))
@@ -313,7 +353,7 @@ vampyhost_reset(PyObject *self, PyObject *args)
 	return 0;
     }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
@@ -329,6 +369,8 @@ vampyhost_reset(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getParameter(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_getParameter" << endl;
+
     PyObject *pyPluginHandle;
     PyObject *pyParam;
 
@@ -337,7 +379,7 @@ vampyhost_getParameter(PyObject *self, PyObject *args)
 			"getParameter() takes plugin handle (object) and parameter id (string) arguments");
 	return 0; }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
     float value = pd->plugin->getParameter(PyString_AS_STRING(pyParam));
@@ -347,6 +389,8 @@ vampyhost_getParameter(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_setParameter(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_setParameter" << endl;
+
     PyObject *pyPluginHandle;
     PyObject *pyParam;
     float value;
@@ -356,7 +400,7 @@ vampyhost_setParameter(PyObject *self, PyObject *args)
 			"setParameter() takes plugin handle (object), parameter id (string), and value (float) arguments");
 	return 0; }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
     pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
@@ -366,6 +410,8 @@ vampyhost_setParameter(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
 {
+    cerr << "vampyhost_process" << endl;
+
     PyObject *pyPluginHandle;
     PyObject *pyBuffer;
     PyObject *pyRealTime;
@@ -387,7 +433,7 @@ vampyhost_process(PyObject *self, PyObject *args)
         return 0;
     }
 
-    PyPluginData *pd = getPluginData(pyPluginHandle);
+    PyPluginObject *pd = getPluginObject(pyPluginHandle);
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
@@ -488,6 +534,56 @@ vampyhost_process(PyObject *self, PyObject *args)
     return pyFs;
 }
 
+static PyMethodDef PyPluginObject_methods[] =
+{
+    {0, 0}
+};
+
+/* Doc:: 10.3 Type Objects */ /* static */ 
+PyTypeObject Plugin_Type = 
+{
+    PyObject_HEAD_INIT(NULL)
+    0,						/*ob_size*/
+    "vampyhost.Plugin",				/*tp_name*/
+    sizeof(PyPluginObject),	/*tp_basicsize*/
+    0,		/*tp_itemsize*/
+    (destructor)PyPluginObject_dealloc, /*tp_dealloc*/
+    0,						/*tp_print*/
+    0, /*tp_getattr*/
+    0, /*tp_setattr*/
+    0,						/*tp_compare*/
+    0,			/*tp_repr*/
+    0,	/*tp_as_number*/
+    0,						/*tp_as_sequence*/
+    0,						/*tp_as_mapping*/
+    0,						/*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    "Plugin Object",      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    PyPluginObject_methods,       /*tp_methods*/ 
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    PyType_GenericAlloc,         /*tp_alloc*/
+    0,           /*tp_new*/
+    PyObject_Del,			/*tp_free*/
+    0,                      /*tp_is_gc*/
+};
 
 // module methods table
 static PyMethodDef vampyhost_methods[] = {
@@ -530,6 +626,12 @@ static PyMethodDef vampyhost_methods[] = {
 
     {0,		0}		/* sentinel */
 };
+
+PyPluginObject *
+PyPluginObject::create_internal()
+{
+    return (PyPluginObject *)PyType_GenericAlloc(&Plugin_Type, 0);
+}
 
 //Documentation for our new module
 PyDoc_STRVAR(module_doc, "This is a template module just for instruction.");
