@@ -36,8 +36,8 @@
 */
 
 /*
-  PyTypeConversions: Type safe conversion utilities between Python
-  types and basic C/C++ types.
+  VectorConversion: A handful of type safe conversion utilities
+  between Python types and C++ vectors.
 */
 
 #ifndef PY_TYPE_CONVERSIONS_H
@@ -76,11 +76,11 @@ public:
     }
 };
 
-class PyTypeConversions
+class VectorConversion
 {
 public:
-    PyTypeConversions();
-    ~PyTypeConversions();
+    VectorConversion();
+    ~VectorConversion();
 
     ValueError getError() const;
 

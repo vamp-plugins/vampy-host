@@ -56,7 +56,7 @@
 #include "vamp-hostsdk/PluginInputDomainAdapter.h"
 #include "vamp-hostsdk/PluginLoader.h"
 
-#include "PyTypeConversions.h"
+#include "VectorConversion.h"
 #include "PyRealTime.h"
 
 #include <iostream>
@@ -135,7 +135,7 @@ vampyhost_enumeratePlugins(PyObject *self, PyObject *)
 
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
-    PyTypeConversions conv;
+    VectorConversion conv;
     return conv.PyValue_From_StringVector(plugins);
 }
 
@@ -145,7 +145,7 @@ vampyhost_getPluginPath(PyObject *self, PyObject *)
     cerr << "vampyhost_getPluginPath" << endl;
 
     vector<string> path = PluginHostAdapter::getPluginPath();
-    PyTypeConversions conv;
+    VectorConversion conv;
     return conv.PyValue_From_StringVector(path);
 }
 
@@ -207,7 +207,7 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
     PluginLoader::PluginCategoryHierarchy
 	category = loader->getPluginCategory(pluginKey);
 
-    PyTypeConversions conv;
+    VectorConversion conv;
     return conv.PyValue_From_StringVector(category);
 }
 
@@ -441,7 +441,7 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     float **inbuf = new float *[channels];
 
-    PyTypeConversions typeConv;
+    VectorConversion typeConv;
 
     cerr << "here!"  << endl;
     
@@ -472,7 +472,7 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     cerr << "no no no, here!"  << endl;
     
-    PyTypeConversions conv;
+    VectorConversion conv;
     
     PyObject *pyFs = PyDict_New();
 

@@ -7,7 +7,7 @@ CXXFLAGS	:= -DHAVE_NUMPY -g -fPIC -Wall -Werror -I$(PY_INCLUDE_PATH) -I$(NUMPY_I
 
 LDFLAGS		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic -Wl,-z,defs -lpython2.7 -ldl
 
-OBJECTS	:= PyRealTime.o PyTypeConversions.o vampyhost.o
+OBJECTS	:= PyRealTime.o VectorConversion.o vampyhost.o
 
 all: vampyhost.so
 
@@ -24,5 +24,5 @@ depend:
 # DO NOT DELETE
 
 PyRealTime.o: PyRealTime.h
-PyTypeConversions.o: PyTypeConversions.h
-vampyhost.o: PyRealTime.h PyTypeConversions.h
+vampyhost.o: PyRealTime.h VectorConversion.h
+VectorConversion.o: VectorConversion.h

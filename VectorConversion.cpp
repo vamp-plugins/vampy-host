@@ -37,7 +37,7 @@
 
 #include <Python.h>
 
-#include "PyTypeConversions.h"
+#include "VectorConversion.h"
 
 #include <math.h>
 #include <float.h>
@@ -47,19 +47,19 @@ using namespace std;
 /*  Note: NO FUNCTION IN THIS CLASS SHOULD ALTER REFERENCE COUNTS
     (EXCEPT FOR TEMPORARY PYTHON OBJECTS)! */
 
-PyTypeConversions::PyTypeConversions() : 
+VectorConversion::VectorConversion() : 
     m_error(false),
     error(m_error) // const public reference for easy access
 {
 }
 
-PyTypeConversions::~PyTypeConversions()
+VectorConversion::~VectorConversion()
 {
 }
 
 /// floating point numbers (TODO: check numpy.float128)
 float 
-PyTypeConversions::PyValue_To_Float(PyObject* pyValue) const
+VectorConversion::PyValue_To_Float(PyObject* pyValue) const
 {
     // convert float
     if (pyValue && PyFloat_Check(pyValue)) 
@@ -77,7 +77,7 @@ PyTypeConversions::PyValue_To_Float(PyObject* pyValue) const
 }
 
 vector<float> 
-PyTypeConversions::PyValue_To_FloatVector (PyObject *pyValue) const 
+VectorConversion::PyValue_To_FloatVector (PyObject *pyValue) const 
 {
     /// numpy array
     if (PyArray_CheckExact(pyValue)) 
@@ -91,13 +91,13 @@ PyTypeConversions::PyValue_To_FloatVector (PyObject *pyValue) const
     string msg = "Value is not list or array of floats";
     setValueError(msg);
 #ifdef _DEBUG
-    cerr << "PyTypeConversions::PyValue_To_FloatVector failed. " << msg << endl;
+    cerr << "VectorConversion::PyValue_To_FloatVector failed. " << msg << endl;
 #endif
     return vector<float>();
 }
 
 vector<float> 
-PyTypeConversions::PyList_To_FloatVector (PyObject *inputList) const 
+VectorConversion::PyList_To_FloatVector (PyObject *inputList) const 
 {
     vector<float> v;
 	
@@ -117,7 +117,7 @@ PyTypeConversions::PyList_To_FloatVector (PyObject *inputList) const
 }
 
 vector<float> 
-PyTypeConversions::PyArray_To_FloatVector (PyObject *pyValue) const 
+VectorConversion::PyArray_To_FloatVector (PyObject *pyValue) const 
 {
     vector<float> v;
 	
@@ -159,14 +159,14 @@ PyTypeConversions::PyArray_To_FloatVector (PyObject *pyValue) const
         string msg = "Unsupported value type in NumPy array object.";
         setValueError(msg);
 #ifdef _DEBUG
-        cerr << "PyTypeConversions::PyArray_To_FloatVector failed. Error: " << msg << endl;
+        cerr << "VectorConversion::PyArray_To_FloatVector failed. Error: " << msg << endl;
 #endif			
         return v;
     }
 }
 
 PyObject *
-PyTypeConversions::PyArray_From_FloatVector(const vector<float> &v) const
+VectorConversion::PyArray_From_FloatVector(const vector<float> &v) const
 {
     npy_intp ndims[1];
     ndims[0] = (int)v.size();
@@ -179,7 +179,7 @@ PyTypeConversions::PyArray_From_FloatVector(const vector<float> &v) const
 }
 
 PyObject *
-PyTypeConversions::PyValue_From_StringVector(const vector<string> &v) const
+VectorConversion::PyValue_From_StringVector(const vector<string> &v) const
 {
     PyObject *pyList = PyList_New(v.size());
     for (size_t i = 0; i < v.size(); ++i) {
@@ -193,7 +193,7 @@ PyTypeConversions::PyValue_From_StringVector(const vector<string> &v) const
 /* Error handling */
 
 void
-PyTypeConversions::setValueError (string message) const
+VectorConversion::setValueError (string message) const
 {
     m_error = true;
     m_errorQueue.push(ValueError(message));
@@ -201,7 +201,7 @@ PyTypeConversions::setValueError (string message) const
 
 /// return a reference to the last error or creates a new one.
 ValueError&
-PyTypeConversions::lastError() const 
+VectorConversion::lastError() const 
 {
     m_error = false;
     if (!m_errorQueue.empty()) return m_errorQueue.back();
@@ -214,7 +214,7 @@ PyTypeConversions::lastError() const
 /// helper function to iterate over the error message queue:
 /// pops the oldest item
 ValueError 
-PyTypeConversions::getError() const
+VectorConversion::getError() const
 {
     if (!m_errorQueue.empty()) {
         ValueError e = m_errorQueue.front();
@@ -232,7 +232,7 @@ PyTypeConversions::getError() const
 
 /// get the type name of an object
 string
-PyTypeConversions::PyValue_Get_TypeName(PyObject* pyValue) const
+VectorConversion::PyValue_Get_TypeName(PyObject* pyValue) const
 {
     PyObject *pyType = PyObject_Type(pyValue);
     if (!pyType) 
