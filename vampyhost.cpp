@@ -108,6 +108,8 @@ PyPluginObject_dealloc(PyPluginObject *self)
 
 PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
+//!!! todo: conv errors
+
 PyPluginObject *
 getPluginObject(PyObject *pyPluginHandle)
 {
@@ -503,7 +505,7 @@ vampyhost_process(PyObject *self, PyObject *args)
 
                 if (!f.values.empty()) {
                     PyDict_SetItemString
-                        (pyF, "values", conv.FloatVector_To_PyArray(f.values));
+                        (pyF, "values", conv.PyArray_From_FloatVector(f.values));
                 }
 
                 PyList_SET_ITEM(pyFl, fli, pyF);

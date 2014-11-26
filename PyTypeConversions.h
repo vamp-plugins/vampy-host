@@ -56,26 +56,15 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-
-#ifdef HAVE_NUMPY
-enum eArrayDataType {
-    dtype_float32 = (int) NPY_FLOAT,
-    dtype_complex64 = (int) NPY_CFLOAT 
-};
-#endif 
-
-/* C++ mapping of PyNone Type */
-struct NoneType {};
 	
 // Data
 class ValueError
 {
 public:
     ValueError() {}
-    ValueError(std::string m, bool s) : message(m),strict(s) {}
+    ValueError(std::string m) : message(m) {}
     std::string location;
     std::string message;
-    bool strict;
     std::string str() const { 
         return (location.empty()) ? message : message + "\nLocation: " + location;}
     template<typename V> ValueError &operator<< (const V& v)
@@ -93,79 +82,57 @@ public:
     PyTypeConversions();
     ~PyTypeConversions();
 
-	ValueError getError() const;
-    std::string PyValue_Get_TypeName(PyObject*) const;
-    float 	PyValue_To_Float(PyObject*) const;
+    ValueError getError() const;
 
-    // Sequence types
-    std::vector<std::string> PyValue_To_StringVector (PyObject*) const;
     std::vector<float> PyValue_To_FloatVector (PyObject*) const;
+    std::vector<float> PyArray_To_FloatVector (PyObject *) const;
     std::vector<float> PyList_To_FloatVector (PyObject*) const;
 
     PyObject *PyValue_From_StringVector(const std::vector<std::string> &) const;
-	
-    // Numpy types
-    std::vector<float> PyArray_To_FloatVector (PyObject *pyValue) const;
-    PyObject *FloatVector_To_PyArray(const std::vector<float> &) const; // Copying the data
+    PyObject *PyArray_From_FloatVector(const std::vector<float> &) const;
+
+private:
+    std::string PyValue_Get_TypeName(PyObject*) const;
+    float PyValue_To_Float(PyObject*) const;
 
     /// Convert DTYPE type 1D NumpyArray to std::vector<RET>
     template<typename RET, typename DTYPE>
-    std::vector<RET> PyArray_Convert(void* raw_data_ptr, long length, size_t strides) const
-    {
-        std::vector<RET> rValue;
+    std::vector<RET> PyArray_Convert(void* raw_data_ptr,
+                                     int length,
+                                     size_t strides) const {
+        
+        std::vector<RET> v(length);
 		
         /// check if the array is continuous, if not use strides info
-        if (sizeof(DTYPE)!=strides) {
+        if (sizeof(DTYPE) != strides) {
 #ifdef _DEBUG_VALUES
             cerr << "Warning: discontinuous numpy array. Strides: " << strides << " bytes. sizeof(dtype): " << sizeof(DTYPE) << endl;
 #endif
             char* data = (char*) raw_data_ptr;
-            for (long i = 0; i<length; ++i){
-                rValue.push_back((RET)(*((DTYPE*)data)));
-#ifdef _DEBUG_VALUES
-                cerr << "value: " << (RET)(*((DTYPE*)data)) << endl;
-#endif				
-                data+=strides;
+            for (int i = 0; i < length; ++i){
+                v[i] = (RET)(*((DTYPE*)data));
+                data += strides;
             }
-            return rValue;
+            return v;
         }
 
         DTYPE* data = (DTYPE*) raw_data_ptr;
-        for (long i = 0; i<length; ++i){
-#ifdef _DEBUG_VALUES
-            cerr << "value: " << (RET)data[i] << endl;
-#endif
-            rValue.push_back((RET)data[i]);
+        for (int i = 0; i < length; ++i){
+            v[i] = (RET)data[i];
         }
-        return rValue;
-    }
 
-    /// this is a special case. numpy.float64 has an array conversions but no array descriptor
-    std::vector<float> PyArray0D_Convert(PyArrayInterface *ai) const
-    {
-        std::vector<float> rValue;
-        if ((ai->typekind) == *"f") 
-            rValue.push_back((float)*(double*)(ai->data));
-        else { 
-            setValueError("Unsupported NumPy data type.",m_strict); 
-            return rValue;
-        }
-#ifdef _DEBUG_VALUES
-        cerr << "value: " << rValue[0] << endl;
-#endif
-        return rValue;
+        return v;
     }
 
 private:
-    bool m_strict;
     mutable bool m_error;
     mutable std::queue<ValueError> m_errorQueue;
 	
-    void setValueError(std::string,bool) const;
+    void setValueError(std::string) const;
     ValueError& lastError() const;
+    
 public:
     const bool& error;
-
 };
 
 #endif
