@@ -43,22 +43,17 @@
 #define NO_IMPORT_ARRAY
 #include "numpy/arrayobject.h"
 
+#include "structmember.h"
+
 #include "VectorConversion.h"
 #include "PyRealTime.h"
 
 #include <string>
 #include <vector>
+#include <cstddef>
 
 using namespace std;
 using namespace Vamp;
-
-static void
-PyPluginObject_dealloc(PyPluginObject *self)
-{
-    cerr << "PyPluginObject_dealloc" << endl;
-    delete self->plugin;
-    PyObject_Del(self);
-}
 
 PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 
@@ -93,7 +88,18 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     pd->channels = 0;
     pd->blockSize = 0;
     pd->stepSize = 0;
+    pd->apiVersion = plugin->getVampApiVersion();
+    pd->identifier = strdup(plugin->getIdentifier().c_str());
     return (PyObject *)pd;
+}
+
+static void
+PyPluginObject_dealloc(PyPluginObject *self)
+{
+    cerr << "PyPluginObject_dealloc" << endl;
+    delete self->plugin;
+    free(self->identifier);
+    PyObject_Del(self);
 }
 
 static PyObject *
@@ -316,6 +322,17 @@ vampyhost_unload(PyObject *self, PyObject *)
     return Py_True;
 }
 
+static PyMemberDef PyPluginObject_members[] =
+{
+    {(char *)"apiVersion", T_INT, offsetof(PyPluginObject, apiVersion), READONLY,
+     xx_foo_doc}, //!!! fix all these!
+     
+    {(char *)"identifier", T_STRING, offsetof(PyPluginObject, identifier), READONLY,
+     xx_foo_doc}, //!!! fix all these!
+    
+    {0, 0}
+};
+
 static PyMethodDef PyPluginObject_methods[] =
 {
     {"getParameter",	vampyhost_getParameter, METH_VARARGS,
@@ -323,7 +340,7 @@ static PyMethodDef PyPluginObject_methods[] =
 
     {"setParameter",	vampyhost_setParameter, METH_VARARGS,
      xx_foo_doc},
-
+    
     {"initialise",	vampyhost_initialise, METH_VARARGS,
      xx_foo_doc},
 
@@ -339,18 +356,6 @@ static PyMethodDef PyPluginObject_methods[] =
     {0, 0}
 };
 
-static int
-PyPluginObject_setattr(PyPluginObject *self, char *name, PyObject *value)
-{
-    return -1;
-}
-
-static PyObject *
-PyPluginObject_getattr(PyPluginObject *self, char *name)
-{
-    return Py_FindMethod(PyPluginObject_methods, (PyObject *)self, name);
-}
-
 /* Doc:: 10.3 Type Objects */ /* static */ 
 PyTypeObject Plugin_Type = 
 {
@@ -361,8 +366,8 @@ PyTypeObject Plugin_Type =
     0,		/*tp_itemsize*/
     (destructor)PyPluginObject_dealloc, /*tp_dealloc*/
     0,						/*tp_print*/
-    (getattrfunc)PyPluginObject_getattr, /*tp_getattr*/
-    (setattrfunc)PyPluginObject_setattr, /*tp_setattr*/
+    0, /*tp_getattr*/
+    0, /*tp_setattr*/
     0,						/*tp_compare*/
     0,			/*tp_repr*/
     0,	/*tp_as_number*/
@@ -371,8 +376,8 @@ PyTypeObject Plugin_Type =
     0,						/*tp_hash*/
     0,                      /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr,                      /*tp_getattro*/
+    PyObject_GenericSetAttr,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     "Plugin Object",      /*tp_doc*/
@@ -383,7 +388,7 @@ PyTypeObject Plugin_Type =
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
     PyPluginObject_methods,       /*tp_methods*/ 
-    0,                      /*tp_members*/
+    PyPluginObject_members,                      /*tp_members*/
     0,                      /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
