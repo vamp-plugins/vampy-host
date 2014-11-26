@@ -233,8 +233,6 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     VectorConversion typeConv;
 
-    cerr << "here!"  << endl;
-    
     vector<vector<float> > data;
     for (int c = 0; c < channels; ++c) {
         PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
@@ -250,18 +248,12 @@ vampyhost_process(PyObject *self, PyObject *args)
         inbuf[c] = &data[c][0];
     }
 
-    cerr << "no, here!"  << endl;
-
     RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
-
-    cerr << "no no, here!"  << endl;
 
     Plugin::FeatureSet fs = pd->plugin->process(inbuf, timeStamp);
 
     delete[] inbuf;
 
-    cerr << "no no no, here!"  << endl;
-    
     VectorConversion conv;
     
     PyObject *pyFs = PyDict_New();
@@ -305,8 +297,6 @@ vampyhost_process(PyObject *self, PyObject *args)
             PyDict_SetItem(pyFs, pyN, pyFl);
         }
     }
-
-    cerr << "no you fool, here!"  << endl;
     
     return pyFs;
 }
@@ -320,8 +310,8 @@ vampyhost_unload(PyObject *self, PyObject *)
     if (!pd) return 0;
 
     delete pd->plugin;
-    pd->plugin = 0; // This is checked by getPluginObject, so we 
-                    // attempt to avoid repeated calls from blowing up
+    pd->plugin = 0; // This is checked by getPluginObject, so we avoid
+                    // blowing up if called repeatedly
 
     return Py_True;
 }
