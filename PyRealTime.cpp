@@ -35,15 +35,12 @@
     authorization.
 */
 
-#include <Python.h>
 #include "PyRealTime.h"
-#include "vamp-sdk/Plugin.h"
+
 #include <string>
 
 using namespace std;
 using namespace Vamp;
-using Vamp::Plugin;
-using Vamp::RealTime;
 
 /* CONSTRUCTOR: New RealTime object from sec and nsec */
 static PyObject*
