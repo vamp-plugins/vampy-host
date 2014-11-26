@@ -63,8 +63,6 @@ static
 PyPluginObject *
 getPluginObject(PyObject *pyPluginHandle)
 {
-    cerr << "getPluginObject" << endl;
-
     PyPluginObject *pd = 0;
     if (PyPlugin_Check(pyPluginHandle)) {
         pd = (PyPluginObject *)pyPluginHandle;
@@ -208,7 +206,6 @@ PyPluginObject_From_Plugin(Plugin *plugin)
 static void
 PyPluginObject_dealloc(PyPluginObject *self)
 {
-    cerr << "PyPluginObject_dealloc" << endl;
     delete self->plugin;
     PyObject_Del(self);
 }
@@ -216,8 +213,6 @@ PyPluginObject_dealloc(PyPluginObject *self)
 static PyObject *
 vampyhost_initialise(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_initialise" << endl;
-    
     size_t channels, blockSize, stepSize;
 
     if (!PyArg_ParseTuple (args, "nnn",
@@ -251,8 +246,6 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_reset(PyObject *self, PyObject *)
 {
-    cerr << "vampyhost_reset" << endl;
-    
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
@@ -269,8 +262,6 @@ vampyhost_reset(PyObject *self, PyObject *)
 static PyObject *
 vampyhost_getParameter(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_getParameter" << endl;
-
     PyObject *pyParam;
 
     if (!PyArg_ParseTuple(args, "S", &pyParam)) {
@@ -288,8 +279,6 @@ vampyhost_getParameter(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_setParameter(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_setParameter" << endl;
-
     PyObject *pyParam;
     float value;
 
@@ -359,8 +348,6 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
 static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_process" << endl;
-
     PyObject *pyBuffer;
     PyObject *pyRealTime;
 
@@ -428,8 +415,6 @@ vampyhost_process(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
 {
-    cerr << "vampyhost_getRemainingFeatures" << endl;
-
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
@@ -447,8 +432,6 @@ vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
 static PyObject *
 vampyhost_unload(PyObject *self, PyObject *)
 {
-    cerr << "vampyhost_unloadPlugin" << endl;
-    
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 

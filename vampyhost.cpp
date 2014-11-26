@@ -70,8 +70,6 @@ PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
 static PyObject *
 vampyhost_enumeratePlugins(PyObject *self, PyObject *)
 {
-    cerr << "vampyhost_enumeratePlugins" << endl;
-
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
     VectorConversion conv;
@@ -81,8 +79,6 @@ vampyhost_enumeratePlugins(PyObject *self, PyObject *)
 static PyObject *
 vampyhost_getPluginPath(PyObject *self, PyObject *)
 {
-    cerr << "vampyhost_getPluginPath" << endl;
-
     vector<string> path = PluginHostAdapter::getPluginPath();
     VectorConversion conv;
     return conv.PyValue_From_StringVector(path);
@@ -90,12 +86,10 @@ vampyhost_getPluginPath(PyObject *self, PyObject *)
 
 static string toPluginKey(PyObject *pyPluginKey)
 {
-    cerr << "toPluginKey" << endl;
-
-    //convert to stl string
+    // convert to stl string
     string pluginKey(PyString_AS_STRING(pyPluginKey));
 
-    //check pluginKey Validity
+    // check pluginKey validity
     string::size_type ki = pluginKey.find(':');
     if (ki == string::npos) {
 	PyErr_SetString(PyExc_TypeError,
@@ -109,8 +103,6 @@ static string toPluginKey(PyObject *pyPluginKey)
 static PyObject *
 vampyhost_getLibraryFor(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_getLibraryFor" << endl;
-
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
@@ -130,8 +122,6 @@ vampyhost_getLibraryFor(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_getPluginCategory" << endl;
-
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
@@ -153,8 +143,6 @@ vampyhost_getPluginCategory(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_getOutputList(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_getOutputList" << endl;
-
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
@@ -193,8 +181,6 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
 static PyObject *
 vampyhost_loadPlugin(PyObject *self, PyObject *args)
 {
-    cerr << "vampyhost_loadPlugin" << endl;
-
     PyObject *pyPluginKey;
     float inputSampleRate;
 
