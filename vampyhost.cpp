@@ -630,6 +630,9 @@ initvampyhost(void)
     if (PyType_Ready(&RealTime_Type) < 0)
 	return;
 
+    if (PyType_Ready(&Plugin_Type) < 0)
+	return;
+
     /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
     if (!m) return;
