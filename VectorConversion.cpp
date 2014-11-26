@@ -191,9 +191,7 @@ VectorConversion::Py2DArray_To_FloatVector (PyObject *pyValue) const
     }
 
     /// check strides (useful if array is not continuous)
-    size_t strides =  *((size_t*) PyArray_STRIDES(pyArray));
-
-    cerr << "dims = " << PyArray_DIMS(pyArray)[0] << "x" << PyArray_DIMS(pyArray)[1] << ", strides = " << strides << endl;
+    size_t *strideptr =  (size_t*) PyArray_STRIDES(pyArray);
     
     /// convert the array
     for (int i = 0; i < PyArray_DIMS(pyArray)[0]; ++i) {
@@ -203,16 +201,16 @@ VectorConversion::Py2DArray_To_FloatVector (PyObject *pyValue) const
         switch (descr->type_num) {
         
         case NPY_FLOAT : // dtype='float32'
-            vv = PyArray_Convert<float,float>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            vv = PyArray_Convert<float,float>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strideptr[1]);
             break;
         case NPY_DOUBLE : // dtype='float64'
-            vv = PyArray_Convert<float,double>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            vv = PyArray_Convert<float,double>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strideptr[1]);
             break;
         case NPY_INT : // dtype='int'
-            vv = PyArray_Convert<float,int>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            vv = PyArray_Convert<float,int>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strideptr[1]);
             break;
         case NPY_LONG : // dtype='long'
-            vv = PyArray_Convert<float,long>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            vv = PyArray_Convert<float,long>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strideptr[1]);
             break;
         default :
             string msg = "Unsupported value type in NumPy array object.";

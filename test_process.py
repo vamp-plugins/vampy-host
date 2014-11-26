@@ -4,6 +4,8 @@ import numpy as np
 
 testPluginKey = "vamp-test-plugin:vamp-test-plugin"
 
+##!!! todo: support for, and test for, correct version of test plugin (with parameter)
+
 rate = 44100
 
 def test_load_unload():

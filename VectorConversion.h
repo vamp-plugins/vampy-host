@@ -102,8 +102,6 @@ private:
                                      int length,
                                      size_t strides) const {
 
-        std::cerr << "PyArray_Convert: raw pointer is " << (long long)(raw_data_ptr) << std::endl;
-        
         std::vector<RET> v(length);
 		
         /// check if the array is continuous, if not use strides info

@@ -392,6 +392,12 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
             return data;
         }
 
+        if ((int)data.size() != channels) {
+//            cerr << "Wrong number of channels: got " << data.size() << ", expected " << channels << endl;
+            PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
+            return vector<vector<float> >();
+        }
+        
     } else {
         
         if (!PyList_Check(pyBuffer)) {
@@ -400,7 +406,7 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
         }
 
         if (PyList_GET_SIZE(pyBuffer) != channels) {
-            cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
+//            cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
             PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
             return data;
         }
@@ -409,13 +415,13 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
             PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
             data.push_back(conv.PyValue_To_FloatVector(cbuf));
         }
+    }
     
-        for (int c = 0; c < channels; ++c) {
-            if ((int)data[c].size() != blockSize) {
-                cerr << "Wrong number of samples on channel " << c << ": expected " << blockSize << " (plugin's block size), got " << data[c].size() << endl;
-                PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
-                return vector<vector<float> >();
-            }
+    for (int c = 0; c < channels; ++c) {
+        if ((int)data[c].size() != blockSize) {
+//            cerr << "Wrong number of samples on channel " << c << ": expected " << blockSize << " (plugin's block size), got " << data[c].size() << endl;
+            PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
+            return vector<vector<float> >();
         }
     }
     
