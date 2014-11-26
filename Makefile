@@ -7,7 +7,7 @@ CXXFLAGS	:= -DHAVE_NUMPY -g -fPIC -Wall -Werror -I$(PY_INCLUDE_PATH) -I$(NUMPY_I
 
 LDFLAGS		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic -Wl,-z,defs -lpython2.7 -ldl
 
-OBJECTS	:= PyRealTime.o VectorConversion.o vampyhost.o
+OBJECTS	:= PyPluginObject.o PyRealTime.o VectorConversion.o vampyhost.o
 
 all: vampyhost.so
 
