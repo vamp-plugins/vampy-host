@@ -613,31 +613,57 @@ PyPluginObject::create_internal()
 //Documentation for our new module
 PyDoc_STRVAR(module_doc, "This is a template module just for instruction.");
 
-
+static int
+setint(PyObject *d, const char *name, int value)
+{
+    PyObject *v;
+    int err;
+    v = PyInt_FromLong((long)value);
+    err = PyDict_SetItemString(d, name, v);
+    Py_XDECREF(v);
+    return err;
+}
 
 /* Initialization function for the module (*must* be called initxx) */
 
-//module initialization (includes extern C {...} as necessary)
+// module initialization (includes extern C {...} as necessary)
 PyMODINIT_FUNC
 initvampyhost(void)
 {
     PyObject *m;
 
-    /* Finalize the type object including setting type of the new type
-     * object; doing it here is required for portability to Windows
-     * without requiring C++. */
+    if (PyType_Ready(&RealTime_Type) < 0) return;
+    if (PyType_Ready(&Plugin_Type) < 0) return;
 
-    if (PyType_Ready(&RealTime_Type) < 0)
-	return;
-
-    if (PyType_Ready(&Plugin_Type) < 0)
-	return;
-
-    /* Create the module and add the functions */
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
-    if (!m) return;
+    if (!m) {
+        cerr << "ERROR: initvampyhost: Failed to initialise module" << endl;
+        return;
+    }
 
     import_array();
 
     PyModule_AddObject(m, "RealTime", (PyObject *)&RealTime_Type);
+    PyModule_AddObject(m, "Plugin", (PyObject *)&Plugin_Type);
+
+    // Some enum types
+    PyObject *dict = PyModule_GetDict(m);
+    if (!dict) {
+        cerr << "ERROR: initvampyhost: Failed to obtain module dictionary" << endl;
+        return;
+    }
+
+    if (setint(dict, "OneSamplePerStep",
+               Plugin::OutputDescriptor::OneSamplePerStep) < 0 ||
+        setint(dict, "FixedSampleRate",
+               Plugin::OutputDescriptor::FixedSampleRate) < 0 ||
+        setint(dict, "VariableSampleRate",
+               Plugin::OutputDescriptor::VariableSampleRate) < 0 ||
+        setint(dict, "TimeDomain",
+               Plugin::TimeDomain) < 0 ||
+        setint(dict, "FrequencyDomain",
+               Plugin::FrequencyDomain) < 0) {
+        cerr << "ERROR: initvampyhost: Failed to add enums to module dictionary" << endl;
+        return;
+    }
 }
