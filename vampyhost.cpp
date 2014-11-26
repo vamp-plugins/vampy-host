@@ -41,7 +41,7 @@
 #include <Python.h>
 
 // define a unique API pointer 
-#define PY_ARRAY_UNIQUE_SYMBOL VAMPY_ARRAY_API
+#define PY_ARRAY_UNIQUE_SYMBOL VAMPYHOST_ARRAY_API
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "numpy/arrayobject.h"
 
@@ -440,7 +440,6 @@ vampyhost_process(PyObject *self, PyObject *args)
     float **inbuf = new float *[channels];
 
     PyTypeConversions typeConv;
-    typeConv.setNumpyInstalled(true);
 
     cerr << "here!"  << endl;
     
@@ -472,7 +471,6 @@ vampyhost_process(PyObject *self, PyObject *args)
     cerr << "no no no, here!"  << endl;
     
     PyTypeConversions conv;
-    conv.setNumpyInstalled(true);
     
     PyObject *pyFs = PyDict_New();
 

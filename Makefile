@@ -16,3 +16,13 @@ vampyhost.so: $(OBJECTS)
 
 clean:	
 	rm -f *.o *.so *.a
+
+depend:
+	makedepend -Y -fMakefile *.cpp *.h
+
+
+# DO NOT DELETE
+
+PyRealTime.o: PyRealTime.h
+PyTypeConversions.o: PyTypeConversions.h
+vampyhost.o: PyRealTime.h PyTypeConversions.h

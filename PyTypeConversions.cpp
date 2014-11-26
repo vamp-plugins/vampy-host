@@ -57,7 +57,6 @@ using std::endl;
 PyTypeConversions::PyTypeConversions() : 
 	m_strict(false),
 	m_error(false),
-	m_numpyInstalled(false),
 	error(m_error) // const public reference for easy access
 {
 }
@@ -65,6 +64,7 @@ PyTypeConversions::PyTypeConversions() :
 PyTypeConversions::~PyTypeConversions()
 {
 }
+
 
 /// floating point numbers (TODO: check numpy.float128)
 float 
@@ -173,436 +173,12 @@ PyTypeConversions::PyValue_To_Float(PyObject* pyValue) const
 	return 0.0;
 }
 
-/// size_t (unsigned integer types)
-size_t 
-PyTypeConversions::PyValue_To_Size_t(PyObject* pyValue) const
-{
-	// convert objects supporting the number protocol 
-	if (PyNumber_Check(pyValue)) 
-	{	
-		if (m_strict && !PyInt_Check(pyValue) && !PyLong_Check(pyValue)) 
-			setValueError("Strict conversion error: object is not integer type.",m_strict);
-		// Note: this function handles Bool,Int,Long,Float
-		// speed is not critical in the use of this type by Vamp
-		// PEP353: Py_ssize_t is size_t but signed ! 
-		Py_ssize_t rValue = PyInt_AsSsize_t(pyValue);
-		if (PyErr_Occurred()) 
-		{
-			PyErr_Print(); PyErr_Clear();
-			setValueError("Error while converting integer object.",m_strict);
-			return 0;
-		}
-		// this test is nonsense -- neither part can occur
-		// owing to range of data types -- size_t is at least
-		// as big as long, and unsigned is always non-negative
-/*
-		if ((unsigned long)rValue > SIZE_T_MAX || (unsigned long)rValue < 0)
-		{
-			setValueError("Overflow error. Object can not be converted to size_t.",m_strict);
-			return 0;
-		}
-*/
-		return (size_t) rValue;
-	}
-	
-	// in strict mode we will not try harder and throw an exception
-	// then the caller should decide what to do with it
-	if (m_strict) {
-		setValueError("Strict conversion error: object is not integer.",m_strict);
-		return 0;
-	}
-	
-	// convert string
-	if (PyString_Check(pyValue))
-	{
-		PyObject* pyLong = PyNumber_Long(pyValue);
-		if (!pyLong) 
-		{
-			if (PyErr_Occurred()) { PyErr_Print(); PyErr_Clear(); }
-			setValueError("String object can not be converted to size_t.",m_strict);
-			return 0;
-		}
-		size_t rValue = this->PyValue_To_Size_t(pyLong);
-		if (!m_error) {
-			Py_DECREF(pyLong);
-			return rValue;
-		} else {
-			Py_CLEAR(pyLong);
-			setValueError ("Error converting string to size_t.",m_strict);
-			return 0;
-		}
-	}
-	
-	// convert the first element of iterable sequences
-	if (PySequence_Check(pyValue) && PySequence_Size(pyValue) > 0) 
-	{
-		PyObject* item = PySequence_GetItem(pyValue,0);
-		if (item)
-		{
-			size_t rValue = this->PyValue_To_Size_t(item);
-			if (!m_error) {
-				Py_DECREF(item);
-				return rValue;
-			} else {
-				Py_CLEAR(item);
-				setValueError("Could not convert sequence element to size_t. ",m_strict);
-				return 0;
-			}
-		}
-	}
-	
-    // give up
-	if (PyErr_Occurred()) { PyErr_Print(); PyErr_Clear(); }
-	std::string msg = "Conversion from " + this->PyValue_Get_TypeName(pyValue) + " to size_t is not possible.";
-	setValueError(msg,m_strict);
-#ifdef _DEBUG
-	cerr << "PyTypeConversions::PyValue_To_Size_t failed. " << msg << endl;
-#endif	
-	return 0;
-}
-
-/// long and int
-long 
-PyTypeConversions::PyValue_To_Long(PyObject* pyValue) const
-{
-	// most common case: convert int (faster)
-	if (pyValue && PyInt_Check(pyValue)) {
-		// if the object is not NULL and verified, this macro just extracts the value.
-		return PyInt_AS_LONG(pyValue);
-	} 
-	
-	// long
-	if (PyLong_Check(pyValue)) {
-		long rValue = PyLong_AsLong(pyValue);
-		if (PyErr_Occurred()) { 
-			PyErr_Print(); PyErr_Clear(); 
-			setValueError("Error while converting long object.",m_strict);
-			return 0;
-		}
-		return rValue;
-	}
-	
-	if (m_strict) {
-		setValueError("Strict conversion error: object is not integer or long integer.",m_strict);
-		return 0;
-	}
-	
-	// convert all objects supporting the number protocol
-	if (PyNumber_Check(pyValue)) 
-	{	
-		// Note: this function handles Bool,Int,Long,Float
-		// PEP353: Py_ssize_t is size_t but signed ! 
-		Py_ssize_t rValue = PyInt_AsSsize_t(pyValue);
-		if (PyErr_Occurred()) 
-		{
-			PyErr_Print(); PyErr_Clear();
-			setValueError("Error while converting integer object.",m_strict);
-			return 0;
-		}
-		if (rValue > LONG_MAX || rValue < LONG_MIN)
-		{
-			setValueError("Overflow error. Object can not be converted to size_t.",m_strict);
-			return 0;
-		}
-		return (long) rValue;
-	}
-	
-	// convert string
-	if (PyString_Check(pyValue))
-	{
-		PyObject* pyLong = PyNumber_Long(pyValue);
-		if (!pyLong) 
-		{
-			if (PyErr_Occurred()) { PyErr_Print(); PyErr_Clear(); }
-			setValueError("String object can not be converted to long.",m_strict);
-			return 0;
-		}
-		long rValue = this->PyValue_To_Long(pyLong);
-		if (!m_error) {
-			Py_DECREF(pyLong);
-			return rValue;
-		} else {
-			Py_CLEAR(pyLong);
-			setValueError ("Error converting string to long.",m_strict);
-			return 0;
-		}
-	}
-	
-	// convert the first element of iterable sequences
-	if (PySequence_Check(pyValue) && PySequence_Size(pyValue) > 0) 
-	{
-		PyObject* item = PySequence_GetItem(pyValue,0);
-		if (item)
-		{
-			size_t rValue = this->PyValue_To_Long(item);
-			if (!m_error) {
-				Py_DECREF(item);
-				return rValue;
-			} else {
-				Py_CLEAR(item);
-				setValueError("Could not convert sequence element to long. ",m_strict);
-				return 0;
-			}
-		}
-	}
-	
-    // give up
-	if (PyErr_Occurred()) { PyErr_Print(); PyErr_Clear(); }
-	std::string msg = "Conversion from " + this->PyValue_Get_TypeName(pyValue) + " to long is not possible.";
-	setValueError(msg,m_strict);
-#ifdef _DEBUG
-	cerr << "PyTypeConversions::PyValue_To_Long failed. " << msg << endl;
-#endif	
-	return 0;
-}
-
-
-bool 
-PyTypeConversions::PyValue_To_Bool(PyObject* pyValue) const
-{
-	// convert objects supporting the number protocol
-	// Note: PyBool is a subclass of PyInt
-	if (PyNumber_Check(pyValue)) 
-	{	
-		if (m_strict && !PyBool_Check(pyValue)) 
-			setValueError
-			("Strict conversion error: object is not boolean type.",m_strict);
-
-		// Note: this function handles Bool,Int,Long,Float
-		Py_ssize_t rValue = PyInt_AsSsize_t(pyValue);
-		if (PyErr_Occurred()) 
-		{
-			PyErr_Print(); PyErr_Clear();
-			setValueError ("Error while converting boolean object.",m_strict);
-		}
-		if (rValue != 1 && rValue != 0)
-		{
-			setValueError ("Overflow error. Object can not be converted to boolean.",m_strict);
-		}
-		return (bool) rValue;
-	}
-	
-	if (m_strict) {
-		setValueError ("Strict conversion error: object is not numerical type.",m_strict);
-		return false;
-	}
-	
-	// convert iterables: the rule is the same as in the interpreter:
-	// empty sequence evaluates to False, anything else is True
-	if (PySequence_Check(pyValue)) 
-	{
-		return PySequence_Size(pyValue)?true:false;
-	}
-	
-    // give up
-	if (PyErr_Occurred()) { PyErr_Print(); PyErr_Clear(); }
-	std::string msg = "Conversion from " + this->PyValue_Get_TypeName(pyValue) + " to boolean is not possible.";
-	setValueError(msg,m_strict);
-#ifdef _DEBUG
-	cerr << "PyTypeConversions::PyValue_To_Bool failed. " << msg << endl;
-#endif	
-	return false;
-}
-
-/// string and objects that support .__str__() 
-/// TODO: check unicode objects
-std::string 
-PyTypeConversions::PyValue_To_String(PyObject* pyValue) const
-{
-	// convert string
-	if (PyString_Check(pyValue)) 
-	{	
-		char *cstr = PyString_AS_STRING(pyValue);
-		if (!cstr) 
-		{
-			if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
-			setValueError("Error while converting string object.",m_strict);
-			return std::string();
-		}
-		return std::string(cstr);
-	}
-	// TODO: deal with unicode here (argh!)
-	
-	// in strict mode we will not try harder
-	if (m_strict) {
-		setValueError("Strict conversion error: object is not string.",m_strict);
-		return std::string();
-	}
-	
-	// accept None as empty string
-	if (pyValue == Py_None) return std::string();
-			
-	// convert list or tuple: empties are turned into empty strings conventionally
-	if (PyList_Check(pyValue) || PyTuple_Check(pyValue)) 
-	{
-		if (!PySequence_Size(pyValue)) return std::string();
-		PyObject* item = PySequence_GetItem(pyValue,0);
-		if (item)
-		{
-			std::string rValue = this->PyValue_To_String(item);
-			if (!m_error) {
-				Py_DECREF(item);
-				return rValue;
-			} else {
-				Py_CLEAR(item);
-				setValueError("Could not convert sequence element to string.",m_strict);
-				return std::string();
-			}
-		}
-	}
-
-	// convert any other object that has .__str__() or .__repr__()
-	PyObject* pyString = PyObject_Str(pyValue);
-	if (pyString && !PyErr_Occurred())
-	{
-		std::string rValue = this->PyValue_To_String(pyString);
-		if (!m_error) {
-			Py_DECREF(pyString);
-			return rValue;
-		} else {
-			Py_CLEAR(pyString);
-			std::string msg = "Object " + this->PyValue_Get_TypeName(pyValue) +" can not be represented as string. ";
-			setValueError (msg,m_strict);
-			return std::string();
-		}
-	}
-
-	// give up
-	PyErr_Print(); PyErr_Clear();
-	std::string msg = "Conversion from " + this->PyValue_Get_TypeName(pyValue) + " to string is not possible.";
-	setValueError(msg,m_strict);
-#ifdef _DEBUG
-	cerr << "PyTypeConversions::PyValue_To_String failed. " << msg << endl;
-#endif	
-	return std::string();
-}
-
-/*			 			C Values to Py Values				  		*/
-
-
-PyObject*
-PyTypeConversions::PyValue_From_CValue(const char* cValue) const
-{
-	// returns new reference
-#ifdef _DEBUG
-	if (!cValue) {
-		std::string msg = "PyTypeConversions::PyValue_From_CValue: Null pointer encountered while converting from const char* .";
-		cerr << msg << endl;
-		setValueError(msg,m_strict);
-		return NULL;
-	}
-#endif
-	PyObject *pyValue = PyString_FromString(cValue);
-	if (!pyValue)
-	{
-		if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
-		setValueError("Error while converting from char* or string.",m_strict);
-#ifdef _DEBUG
-		cerr << "PyTypeConversions::PyValue_From_CValue: Interpreter failed to convert from const char*" << endl;
-#endif
-		return NULL;
-	}
-	return pyValue;
-}
-
-PyObject*
-PyTypeConversions::PyValue_From_CValue(size_t cValue) const
-{
-	// returns new reference
-	PyObject *pyValue = PyInt_FromSsize_t((Py_ssize_t)cValue);
-	if (!pyValue)
-	{
-		if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
-		setValueError("Error while converting from size_t.",m_strict);
-#ifdef _DEBUG
-		cerr << "PyTypeConversions::PyValue_From_CValue: Interpreter failed to convert from size_t" << endl;
-#endif
-		return NULL;
-	}
-	return pyValue;
-}
-
-PyObject*
-PyTypeConversions::PyValue_From_CValue(double cValue) const
-{
-	// returns new reference
-	PyObject *pyValue = PyFloat_FromDouble(cValue);
-	if (!pyValue)
-	{
-		if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
-		setValueError("Error while converting from float or double.",m_strict);
-#ifdef _DEBUG
-		cerr << "PyTypeConversions::PyValue_From_CValue: Interpreter failed to convert from float or double" << endl;
-#endif
-		return NULL;
-	}
-	return pyValue;
-}
-
-PyObject*
-PyTypeConversions::PyValue_From_CValue(bool cValue) const
-{
-	// returns new reference
-	PyObject *pyValue = PyBool_FromLong((long)cValue);
-	if (!pyValue)
-	{
-		if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
-		setValueError("Error while converting from bool.",m_strict);
-#ifdef _DEBUG
-		cerr << "PyTypeConversions::PyValue_From_CValue: Interpreter failed to convert from bool" << endl;
-#endif
-		return NULL;
-	}
-	return pyValue;
-}
-
 
 /*			 			Sequence Types to C++ Types	    		  	*/
-
-//convert Python list to C++ vector of strings
-std::vector<std::string> 
-PyTypeConversions::PyValue_To_StringVector (PyObject *pyList) const 
-{
-	
-	std::vector<std::string> Output;
-	std::string ListElement;
-	PyObject *pyString = NULL;
-	
-	if (PyList_Check(pyList)) {
-
-		for (Py_ssize_t i = 0; i < PyList_GET_SIZE(pyList); ++i) {
-			//Get next list item (Borrowed Reference)
-			pyString = PyList_GET_ITEM(pyList,i);
-			ListElement = (string) PyString_AsString(PyObject_Str(pyString));
-			Output.push_back(ListElement);
-		}
-		return Output;
-	}
-
-// #ifdef _DEBUG
-// 	cerr << "PyTypeConversions::PyValue_To_StringVector: Warning: Value is not list of strings." << endl;
-// #endif
-
-	/// Assume a single value that can be casted as string 
-	/// this allows to write e.g. Feature.label = 5.2 instead of ['5.2']
-	Output.push_back(PyValue_To_String(pyList));
-	if (m_error) {
-		std::string msg = "Value is not list of strings nor can be casted as string. ";
-		setValueError(msg,m_strict);
-#ifdef _DEBUG
-		cerr << "PyTypeConversions::PyValue_To_StringVector failed. " << msg << endl;
-#endif
-	}
-	return Output;
-}
 
 //convert PyFeature.value (typically a list or numpy array) to C++ vector of floats
 std::vector<float> 
 PyTypeConversions::PyValue_To_FloatVector (PyObject *pyValue) const 
-{
-
-#ifdef HAVE_NUMPY
-if (m_numpyInstalled) 
 {
 	// there are four types of values we may receive from a numpy process:
 	// * a python scalar, 
@@ -625,8 +201,6 @@ if (m_numpyInstalled)
 	/// numpy array
 	if (PyArray_CheckExact(pyValue)) 
 		return PyArray_To_FloatVector(pyValue);
-}
-#endif
 
 	/// python list of floats (backward compatible)
 	if (PyList_Check(pyValue)) {
@@ -697,7 +271,6 @@ PyTypeConversions::PyList_To_FloatVector (PyObject *inputList) const
 
 // if numpy is not installed this will not be called, 
 // therefor we do not check again
-#ifdef HAVE_NUMPY 
 std::vector<float> 
 PyTypeConversions::PyArray_To_FloatVector (PyObject *pyValue) const 
 {
@@ -777,7 +350,6 @@ PyTypeConversions::FloatVector_To_PyArray(const vector<float> &v) const
 	}
 	return arr;
 }
-#endif
 
 PyObject *
 PyTypeConversions::PyValue_From_StringVector(const std::vector<std::string> &v) const
