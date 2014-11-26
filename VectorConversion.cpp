@@ -136,7 +136,7 @@ VectorConversion::PyArray_To_FloatVector (PyObject *pyValue) const
     }
 
     if (PyArray_NDIM(pyArray) != 1) {
-        string msg = "NumPy array must be a one dimensional vector.";
+        string msg = "NumPy array must be a one-dimensional vector.";
         setValueError(msg);
         return v;
     }
@@ -163,6 +163,68 @@ VectorConversion::PyArray_To_FloatVector (PyObject *pyValue) const
 #endif			
         return v;
     }
+}
+
+vector<vector<float> >
+VectorConversion::Py2DArray_To_FloatVector (PyObject *pyValue) const 
+{
+    vector<vector<float> > v;
+	
+    if (!PyArray_Check(pyValue)) {
+        setValueError("Value is not an array");
+        return v;
+    } 
+
+    PyArrayObject* pyArray = (PyArrayObject*) pyValue;
+    PyArray_Descr* descr = PyArray_DESCR(pyArray);
+	
+    if (PyArray_DATA(pyArray) == 0 || descr == 0) {
+        string msg = "NumPy array with NULL data or descriptor pointer encountered.";
+        setValueError(msg);
+        return v;
+    }
+
+    if (PyArray_NDIM(pyArray) != 2) {
+        string msg = "NumPy array must be a two-dimensional matrix.";
+        setValueError(msg);
+        return v;
+    }
+
+    /// check strides (useful if array is not continuous)
+    size_t strides =  *((size_t*) PyArray_STRIDES(pyArray));
+
+    cerr << "dims = " << PyArray_DIMS(pyArray)[0] << "x" << PyArray_DIMS(pyArray)[1] << ", strides = " << strides << endl;
+    
+    /// convert the array
+    for (int i = 0; i < PyArray_DIMS(pyArray)[0]; ++i) {
+
+        vector<float> vv;
+        
+        switch (descr->type_num) {
+        
+        case NPY_FLOAT : // dtype='float32'
+            vv = PyArray_Convert<float,float>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            break;
+        case NPY_DOUBLE : // dtype='float64'
+            vv = PyArray_Convert<float,double>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            break;
+        case NPY_INT : // dtype='int'
+            vv = PyArray_Convert<float,int>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            break;
+        case NPY_LONG : // dtype='long'
+            vv = PyArray_Convert<float,long>(PyArray_GETPTR2(pyArray, i, 0),PyArray_DIMS(pyArray)[1],strides);
+            break;
+        default :
+            string msg = "Unsupported value type in NumPy array object.";
+            cerr << "VectorConversion::PyArray_To_FloatVector failed (value type = " << descr->type_num << "). Error: " << msg << endl;
+            setValueError(msg);
+            return v;
+        }
+
+        v.push_back(vv);
+    }
+
+    return v;
 }
 
 PyObject *

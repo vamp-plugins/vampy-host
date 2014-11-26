@@ -87,7 +87,8 @@ public:
     std::vector<float> PyValue_To_FloatVector (PyObject*) const;
     std::vector<float> PyArray_To_FloatVector (PyObject *) const;
     std::vector<float> PyList_To_FloatVector (PyObject*) const;
-
+    std::vector<std::vector<float> > Py2DArray_To_FloatVector (PyObject *) const;
+    
     PyObject *PyValue_From_StringVector(const std::vector<std::string> &) const;
     PyObject *PyArray_From_FloatVector(const std::vector<float> &) const;
 
@@ -100,6 +101,8 @@ private:
     std::vector<RET> PyArray_Convert(void* raw_data_ptr,
                                      int length,
                                      size_t strides) const {
+
+        std::cerr << "PyArray_Convert: raw pointer is " << (long long)(raw_data_ptr) << std::endl;
         
         std::vector<RET> v(length);
 		

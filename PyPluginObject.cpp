@@ -376,6 +376,52 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
     return pyFs;
 }
 
+static vector<vector<float> >
+convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
+{
+    vector<vector<float> > data;
+
+    VectorConversion conv;
+
+    if (PyArray_CheckExact(pyBuffer)) {
+
+        data = conv.Py2DArray_To_FloatVector(pyBuffer);
+
+        if (conv.error) {
+            PyErr_SetString(PyExc_TypeError, conv.getError().str().c_str());
+            return data;
+        }
+
+    } else {
+        
+        if (!PyList_Check(pyBuffer)) {
+            PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+            return data;
+        }
+
+        if (PyList_GET_SIZE(pyBuffer) != channels) {
+            cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
+            PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
+            return data;
+        }
+
+        for (int c = 0; c < channels; ++c) {
+            PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
+            data.push_back(conv.PyValue_To_FloatVector(cbuf));
+        }
+    
+        for (int c = 0; c < channels; ++c) {
+            if ((int)data[c].size() != blockSize) {
+                cerr << "Wrong number of samples on channel " << c << ": expected " << blockSize << " (plugin's block size), got " << data[c].size() << endl;
+                PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
+                return vector<vector<float> >();
+            }
+        }
+    }
+    
+    return data;
+}
+
 static PyObject *
 process(PyObject *self, PyObject *args)
 {
@@ -386,17 +432,12 @@ process(PyObject *self, PyObject *args)
                           &pyBuffer,                    // Audio data
                           &pyRealTime)) {               // TimeStamp
         PyErr_SetString(PyExc_TypeError,
-                        "process() takes plugin handle (object), buffer (2D array of channels * samples floats) and timestamp (RealTime) arguments");
+                        "process() takes plugin handle (object), buffer (list of arrays of floats, one array per channel) and timestamp (RealTime) arguments");
         return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
-        PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
+        PyErr_SetString(PyExc_TypeError, "Valid timestamp required.");
         return 0; }
-
-    if (!PyList_Check(pyBuffer)) {
-        PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
-        return 0;
-    }
 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -407,37 +448,17 @@ process(PyObject *self, PyObject *args)
         return 0;
     }
 
-    int channels =  pd->channels;
-
-    if (PyList_GET_SIZE(pyBuffer) != channels) {
-        cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
-        PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
-        return 0;
-    }
+    int channels = pd->channels;
+    vector<vector<float> > data =
+        convertPluginInput(pyBuffer, channels, pd->blockSize);
+    if (data.empty()) return 0;
 
     float **inbuf = new float *[channels];
-
-    VectorConversion typeConv;
-
-    vector<vector<float> > data;
     for (int c = 0; c < channels; ++c) {
-        PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
-        data.push_back(typeConv.PyValue_To_FloatVector(cbuf));
-    }
-    
-    for (int c = 0; c < channels; ++c) {
-        if (data[c].size() != pd->blockSize) {
-            cerr << "Wrong number of samples on channel " << c << ": expected " << pd->blockSize << " (plugin's block size), got " << data[c].size() << endl;
-            PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
-            return 0;
-        }
         inbuf[c] = &data[c][0];
     }
-
     RealTime timeStamp = *PyRealTime_AsRealTime(pyRealTime);
-
     Plugin::FeatureSet fs = pd->plugin->process(inbuf, timeStamp);
-
     delete[] inbuf;
 
     return convertFeatureSet(fs);
@@ -590,7 +611,7 @@ PyTypeObject Plugin_Type =
     PyObject_GenericSetAttr,            /*tp_setattro*/
     0,                                  /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,                 /*tp_flags*/
-    "Vamp plugin object.",                    /*tp_doc*/
+    "Plugin object, providing a low-level API for running a Vamp plugin.", /*tp_doc*/
     0,                                  /*tp_traverse*/
     0,                                  /*tp_clear*/
     0,                                  /*tp_richcompare*/
