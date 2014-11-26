@@ -1,0 +1,15 @@
+
+PY_INCLUDE_PATH		:= /usr/include/python2.7
+NUMPY_INCLUDE_PATH 	:= /usr/lib/python2.7/site-packages/numpy/core/include
+
+CFLAGS 			:= -O2 -Wall -Werror -fno-strict-aliasing -fPIC \
+			   -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH)
+
+CXXFLAGS 		:= $(CFLAGS)
+
+LDFLAGS 		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic \
+			   -Wl,-z,defs -lpython2.7 -ldl
+
+LIBRARY_EXT := .so
+
+include Makefile.inc
