@@ -51,8 +51,9 @@ struct PyPluginObject
     size_t channels;
     size_t blockSize;
     size_t stepSize;
-    int apiVersion;
-    char *identifier;
+    PyObject *info;
+    int inputDomain;
+    PyObject *parameters;
 };
 
 PyAPI_DATA(PyTypeObject) Plugin_Type;

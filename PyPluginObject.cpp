@@ -78,6 +78,13 @@ getPluginObject(PyObject *pyPluginHandle)
     }
 }
 
+static
+PyObject *
+pystr(const string &s)
+{
+    return PyString_FromString(s.c_str());
+}
+
 PyObject *
 PyPluginObject_From_Plugin(Plugin *plugin)
 {
@@ -88,8 +95,67 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     pd->channels = 0;
     pd->blockSize = 0;
     pd->stepSize = 0;
-    pd->apiVersion = plugin->getVampApiVersion();
-    pd->identifier = strdup(plugin->getIdentifier().c_str());
+
+    PyObject *infodict = PyDict_New();
+    PyDict_SetItemString
+        (infodict, "apiVersion", PyInt_FromLong(plugin->getVampApiVersion()));
+    PyDict_SetItemString
+        (infodict, "pluginVersion", PyInt_FromLong(plugin->getPluginVersion()));
+    PyDict_SetItemString
+        (infodict, "identifier", pystr(plugin->getIdentifier()));
+    PyDict_SetItemString
+        (infodict, "name", pystr(plugin->getName()));
+    PyDict_SetItemString
+        (infodict, "description", pystr(plugin->getDescription()));
+    PyDict_SetItemString
+        (infodict, "maker", pystr(plugin->getMaker()));
+    PyDict_SetItemString
+        (infodict, "copyright", pystr(plugin->getCopyright()));
+    pd->info = infodict;
+
+    pd->inputDomain = plugin->getInputDomain();
+
+    Plugin::ParameterList pl = plugin->getParameterDescriptors();
+    
+    PyObject *params = PyList_New(pl.size());
+
+    VectorConversion conv;
+    
+    for (int i = 0; i < (int)pl.size(); ++i) {
+        PyObject *paramdict = PyDict_New();
+        PyDict_SetItemString
+            (paramdict, "identifier", pystr(pl[i].identifier));
+        PyDict_SetItemString
+            (paramdict, "name", pystr(pl[i].name));
+        PyDict_SetItemString
+            (paramdict, "description", pystr(pl[i].description));
+        PyDict_SetItemString
+            (paramdict, "unit", pystr(pl[i].unit));
+        PyDict_SetItemString
+            (paramdict, "minValue", PyFloat_FromDouble(pl[i].minValue));
+        PyDict_SetItemString
+            (paramdict, "maxValue", PyFloat_FromDouble(pl[i].maxValue));
+        PyDict_SetItemString
+            (paramdict, "defaultValue", PyFloat_FromDouble(pl[i].defaultValue));
+        if (pl[i].isQuantized) {
+            PyDict_SetItemString
+                (paramdict, "isQuantized", Py_True);
+            PyDict_SetItemString
+                (paramdict, "quantizeStep", PyFloat_FromDouble(pl[i].quantizeStep));
+            if (!pl[i].valueNames.empty()) {
+                PyDict_SetItemString
+                    (paramdict, "valueNames", conv.PyValue_From_StringVector(pl[i].valueNames));
+            }
+        } else {
+            PyDict_SetItemString
+                (paramdict, "isQuantized", Py_False);
+        }
+        
+        PyList_SET_ITEM(params, i, paramdict);
+    }
+
+    pd->parameters = params;
+    
     return (PyObject *)pd;
 }
 
@@ -98,7 +164,6 @@ PyPluginObject_dealloc(PyPluginObject *self)
 {
     cerr << "PyPluginObject_dealloc" << endl;
     delete self->plugin;
-    free(self->identifier);
     PyObject_Del(self);
 }
 
@@ -289,7 +354,7 @@ vampyhost_process(PyObject *self, PyObject *args)
                 }
 
                 PyDict_SetItemString
-                    (pyF, "label", PyString_FromString(f.label.c_str()));
+                    (pyF, "label", pystr(f.label));
 
                 if (!f.values.empty()) {
                     PyDict_SetItemString
@@ -324,11 +389,14 @@ vampyhost_unload(PyObject *self, PyObject *)
 
 static PyMemberDef PyPluginObject_members[] =
 {
-    {(char *)"apiVersion", T_INT, offsetof(PyPluginObject, apiVersion), READONLY,
-     xx_foo_doc}, //!!! fix all these!
-     
-    {(char *)"identifier", T_STRING, offsetof(PyPluginObject, identifier), READONLY,
-     xx_foo_doc}, //!!! fix all these!
+    {(char *)"info", T_OBJECT, offsetof(PyPluginObject, info), READONLY,
+     xx_foo_doc},
+
+    {(char *)"inputDomain", T_INT, offsetof(PyPluginObject, inputDomain), READONLY,
+     xx_foo_doc},
+
+    {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,
+     xx_foo_doc},
     
     {0, 0}
 };
