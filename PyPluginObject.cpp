@@ -115,11 +115,10 @@ PyPluginObject_From_Plugin(Plugin *plugin)
 
     pd->inputDomain = plugin->getInputDomain();
 
-    Plugin::ParameterList pl = plugin->getParameterDescriptors();
-    
-    PyObject *params = PyList_New(pl.size());
-
     VectorConversion conv;
+
+    Plugin::ParameterList pl = plugin->getParameterDescriptors();
+    PyObject *params = PyList_New(pl.size());
     
     for (int i = 0; i < (int)pl.size(); ++i) {
         PyObject *paramdict = PyDict_New();
@@ -155,6 +154,53 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     }
 
     pd->parameters = params;
+
+    Plugin::OutputList ol = plugin->getOutputDescriptors();
+    PyObject *outputs = PyList_New(ol.size());
+    
+    for (int i = 0; i < (int)ol.size(); ++i) {
+        PyObject *outdict = PyDict_New();
+        PyDict_SetItemString
+            (outdict, "identifier", pystr(ol[i].identifier));
+        PyDict_SetItemString
+            (outdict, "name", pystr(ol[i].name));
+        PyDict_SetItemString
+            (outdict, "description", pystr(ol[i].description));
+        PyDict_SetItemString
+            (outdict, "binCount", PyInt_FromLong(ol[i].binCount));
+        if (ol[i].binCount > 0) {
+            if (ol[i].hasKnownExtents) {
+                PyDict_SetItemString
+                    (outdict, "hasKnownExtents", Py_True);
+                PyDict_SetItemString
+                    (outdict, "minValue", PyFloat_FromDouble(ol[i].minValue));
+                PyDict_SetItemString
+                    (outdict, "maxValue", PyFloat_FromDouble(ol[i].maxValue));
+            } else {
+                PyDict_SetItemString
+                    (outdict, "hasKnownExtents", Py_False);
+            }
+            if (ol[i].isQuantized) {
+                PyDict_SetItemString
+                    (outdict, "isQuantized", Py_True);
+                PyDict_SetItemString
+                    (outdict, "quantizeStep", PyFloat_FromDouble(ol[i].quantizeStep));
+            } else {
+                PyDict_SetItemString
+                    (outdict, "isQuantized", Py_False);
+            }
+        }
+        PyDict_SetItemString
+            (outdict, "sampleType", PyInt_FromLong((int)ol[i].sampleType));
+        PyDict_SetItemString
+            (outdict, "sampleRate", PyFloat_FromDouble(ol[i].sampleRate));
+        PyDict_SetItemString
+            (outdict, "hasDuration", ol[i].hasDuration ? Py_True : Py_False);
+        
+        PyList_SET_ITEM(outputs, i, outdict);
+    }
+
+    pd->outputs = outputs;
     
     return (PyObject *)pd;
 }
@@ -259,6 +305,57 @@ vampyhost_setParameter(PyObject *self, PyObject *args)
     return Py_True;
 }
 
+static
+PyObject *
+convertFeatureSet(const Plugin::FeatureSet &fs)
+{
+    VectorConversion conv;
+    
+    PyObject *pyFs = PyDict_New();
+
+    for (Plugin::FeatureSet::const_iterator fsi = fs.begin();
+         fsi != fs.end(); ++fsi) {
+
+        int fno = fsi->first;
+        const Plugin::FeatureList &fl = fsi->second;
+
+        if (!fl.empty()) {
+
+            PyObject *pyFl = PyList_New(fl.size());
+
+            for (int fli = 0; fli < (int)fl.size(); ++fli) {
+
+                const Plugin::Feature &f = fl[fli];
+                PyObject *pyF = PyDict_New();
+
+                if (f.hasTimestamp) {
+                    PyDict_SetItemString
+                        (pyF, "timestamp", PyRealTime_FromRealTime(f.timestamp));
+                }
+                if (f.hasDuration) {
+                    PyDict_SetItemString
+                        (pyF, "duration", PyRealTime_FromRealTime(f.duration));
+                }
+
+                PyDict_SetItemString
+                    (pyF, "label", pystr(f.label));
+
+                if (!f.values.empty()) {
+                    PyDict_SetItemString
+                        (pyF, "values", conv.PyArray_From_FloatVector(f.values));
+                }
+
+                PyList_SET_ITEM(pyFl, fli, pyF);
+            }
+
+            PyObject *pyN = PyInt_FromLong(fno);
+            PyDict_SetItem(pyFs, pyN, pyFl);
+        }
+    }
+    
+    return pyFs;
+}
+
 static PyObject *
 vampyhost_process(PyObject *self, PyObject *args)
 {
@@ -325,51 +422,26 @@ vampyhost_process(PyObject *self, PyObject *args)
 
     delete[] inbuf;
 
-    VectorConversion conv;
-    
-    PyObject *pyFs = PyDict_New();
+    return convertFeatureSet(fs);
+}
 
-    for (Plugin::FeatureSet::const_iterator fsi = fs.begin();
-         fsi != fs.end(); ++fsi) {
+static PyObject *
+vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
+{
+    cerr << "vampyhost_getRemainingFeatures" << endl;
 
-        int fno = fsi->first;
-        const Plugin::FeatureList &fl = fsi->second;
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
 
-        if (!fl.empty()) {
-
-            PyObject *pyFl = PyList_New(fl.size());
-
-            for (int fli = 0; fli < (int)fl.size(); ++fli) {
-
-                const Plugin::Feature &f = fl[fli];
-                PyObject *pyF = PyDict_New();
-
-                if (f.hasTimestamp) {
-                    PyDict_SetItemString
-                        (pyF, "timestamp", PyRealTime_FromRealTime(f.timestamp));
-                }
-                if (f.hasDuration) {
-                    PyDict_SetItemString
-                        (pyF, "duration", PyRealTime_FromRealTime(f.duration));
-                }
-
-                PyDict_SetItemString
-                    (pyF, "label", pystr(f.label));
-
-                if (!f.values.empty()) {
-                    PyDict_SetItemString
-                        (pyF, "values", conv.PyArray_From_FloatVector(f.values));
-                }
-
-                PyList_SET_ITEM(pyFl, fli, pyF);
-            }
-
-            PyObject *pyN = PyInt_FromLong(fno);
-            PyDict_SetItem(pyFs, pyN, pyFl);
-        }
+    if (!pd->isInitialised) {
+	PyErr_SetString(PyExc_StandardError,
+			"Plugin has not been initialised.");
+	return 0;
     }
-    
-    return pyFs;
+
+    Plugin::FeatureSet fs = pd->plugin->getRemainingFeatures();
+
+    return convertFeatureSet(fs);
 }
 
 static PyObject *
@@ -397,6 +469,9 @@ static PyMemberDef PyPluginObject_members[] =
 
     {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,
      xx_foo_doc},
+
+    {(char *)"outputs", T_OBJECT, offsetof(PyPluginObject, outputs), READONLY,
+     xx_foo_doc},
     
     {0, 0}
 };
@@ -416,6 +491,9 @@ static PyMethodDef PyPluginObject_methods[] =
      xx_foo_doc},
 
     {"process",	vampyhost_process, METH_VARARGS,
+     xx_foo_doc},
+
+    {"getRemainingFeatures",	vampyhost_getRemainingFeatures, METH_NOARGS,
      xx_foo_doc},
 
     {"unload", vampyhost_unload, METH_NOARGS,
