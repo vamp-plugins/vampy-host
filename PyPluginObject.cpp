@@ -152,8 +152,24 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     }
 
     pd->parameters = params;
+    
+    return (PyObject *)pd;
+}
 
-    Plugin::OutputList ol = plugin->getOutputDescriptors();
+static void
+PyPluginObject_dealloc(PyPluginObject *self)
+{
+    delete self->plugin;
+    PyObject_Del(self);
+}
+
+static PyObject *
+getOutputs(PyObject *self, PyObject *args)
+{ 
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
     PyObject *outputs = PyList_New(ol.size());
     
     for (int i = 0; i < (int)ol.size(); ++i) {
@@ -198,16 +214,7 @@ PyPluginObject_From_Plugin(Plugin *plugin)
         PyList_SET_ITEM(outputs, i, outdict);
     }
 
-    pd->outputs = outputs;
-    
-    return (PyObject *)pd;
-}
-
-static void
-PyPluginObject_dealloc(PyPluginObject *self)
-{
-    delete self->plugin;
-    PyObject_Del(self);
+    return outputs;
 }
 
 static PyObject *
@@ -430,6 +437,38 @@ vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
 }
 
 static PyObject *
+vampyhost_getPreferredBlockSize(PyObject *self, PyObject *)
+{
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+    return PyInt_FromLong(pd->plugin->getPreferredBlockSize());
+}
+
+static PyObject *
+vampyhost_getPreferredStepSize(PyObject *self, PyObject *)
+{
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+    return PyInt_FromLong(pd->plugin->getPreferredStepSize());
+}
+
+static PyObject *
+vampyhost_getMinChannelCount(PyObject *self, PyObject *)
+{
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+    return PyInt_FromLong(pd->plugin->getMinChannelCount());
+}
+
+static PyObject *
+vampyhost_getMaxChannelCount(PyObject *self, PyObject *)
+{
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+    return PyInt_FromLong(pd->plugin->getMaxChannelCount());
+}
+    
+static PyObject *
 vampyhost_unload(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
@@ -452,19 +491,31 @@ static PyMemberDef PyPluginObject_members[] =
 
     {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,
      xx_foo_doc},
-
-    {(char *)"outputs", T_OBJECT, offsetof(PyPluginObject, outputs), READONLY,
-     xx_foo_doc},
     
     {0, 0}
 };
 
 static PyMethodDef PyPluginObject_methods[] =
 {
-    {"getParameter",	vampyhost_getParameter, METH_VARARGS,
+    {"getOutputs", getOutputs, METH_NOARGS,
+     xx_foo_doc},
+
+    {"getParameterValue",	vampyhost_getParameter, METH_VARARGS,
      xx_foo_doc}, //!!! fix all these!
 
-    {"setParameter",	vampyhost_setParameter, METH_VARARGS,
+    {"setParameterValue",	vampyhost_setParameter, METH_VARARGS,
+     xx_foo_doc},
+
+    {"getPreferredBlockSize",	vampyhost_getPreferredBlockSize, METH_VARARGS,
+     xx_foo_doc}, //!!! fix all these!
+
+    {"getPreferredStepSize",	vampyhost_getPreferredStepSize, METH_VARARGS,
+     xx_foo_doc},
+
+    {"getMinChannelCount",	vampyhost_getMinChannelCount, METH_VARARGS,
+     xx_foo_doc}, //!!! fix all these!
+
+    {"getMaxChannelCount",	vampyhost_getMaxChannelCount, METH_VARARGS,
      xx_foo_doc},
     
     {"initialise",	vampyhost_initialise, METH_VARARGS,

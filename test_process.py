@@ -16,10 +16,10 @@ def test_load_unload():
 
 def test_get_set_parameter():
     plug = vh.loadPlugin(testPluginKey, rate)
-    value = plug.getParameter("produce_output")
+    value = plug.getParameterValue("produce_output")
     assert(value == 1.0)
-    plug.setParameter("produce_output", 0.0)
-    value = plug.getParameter("produce_output")
+    plug.setParameterValue("produce_output", 0.0)
+    value = plug.getParameterValue("produce_output")
     assert(value == 0.0)
     
 def test_process_without_initialise():
