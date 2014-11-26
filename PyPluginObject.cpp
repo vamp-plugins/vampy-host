@@ -55,8 +55,6 @@
 using namespace std;
 using namespace Vamp;
 
-PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
-
 //!!! todo: conv errors
 
 static
@@ -69,7 +67,7 @@ getPluginObject(PyObject *pyPluginHandle)
     }
     if (!pd || !pd->plugin) {
         PyErr_SetString(PyExc_AttributeError,
-			"Invalid or already deleted plugin handle.");
+                        "Invalid or already deleted plugin handle.");
         return 0;
     } else {
         return pd;
@@ -152,6 +150,15 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     }
 
     pd->parameters = params;
+
+    Plugin::ProgramList prl = plugin->getPrograms();
+    PyObject *progs = PyList_New(prl.size());
+
+    for (int i = 0; i < (int)prl.size(); ++i) {
+        PyList_SET_ITEM(progs, i, pystr(prl[i]));
+    }
+
+    pd->programs = progs;
     
     return (PyObject *)pd;
 }
@@ -218,17 +225,17 @@ getOutputs(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_initialise(PyObject *self, PyObject *args)
+initialise(PyObject *self, PyObject *args)
 {
     size_t channels, blockSize, stepSize;
 
     if (!PyArg_ParseTuple (args, "nnn",
-			   (size_t) &channels,
-			   (size_t) &stepSize,
-			   (size_t) &blockSize)) {
-	PyErr_SetString(PyExc_TypeError,
-			"initialise() takes channel count, step size, and block size arguments");
-	return 0;
+                           (size_t) &channels,
+                           (size_t) &stepSize,
+                           (size_t) &blockSize)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "initialise() takes channel count, step size, and block size arguments");
+        return 0;
     }
 
     PyPluginObject *pd = getPluginObject(self);
@@ -239,10 +246,10 @@ vampyhost_initialise(PyObject *self, PyObject *args)
     pd->blockSize = blockSize;
 
     if (!pd->plugin->initialise(channels, stepSize, blockSize)) {
-        cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << " and ADAPT_ALL_SAFE set" << endl;
-	PyErr_SetString(PyExc_TypeError,
-			"Plugin initialization failed");
-	return 0;
+        cerr << "Failed to initialise native plugin adapter with channels = " << channels << ", stepSize = " << stepSize << ", blockSize = " << blockSize << endl;
+        PyErr_SetString(PyExc_TypeError,
+                        "Plugin initialization failed");
+        return 0;
     }
 
     pd->isInitialised = true;
@@ -251,7 +258,7 @@ vampyhost_initialise(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_reset(PyObject *self, PyObject *)
+reset(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -267,14 +274,14 @@ vampyhost_reset(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getParameter(PyObject *self, PyObject *args)
+getParameter(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
     if (!PyArg_ParseTuple(args, "S", &pyParam)) {
-	PyErr_SetString(PyExc_TypeError,
-			"getParameter() takes parameter id (string) argument");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,
+                        "getParameter() takes parameter id (string) argument");
+        return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -284,20 +291,37 @@ vampyhost_getParameter(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_setParameter(PyObject *self, PyObject *args)
+setParameter(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
     float value;
 
     if (!PyArg_ParseTuple(args, "Sf", &pyParam, &value)) {
-	PyErr_SetString(PyExc_TypeError,
-			"setParameter() takes parameter id (string), and value (float) arguments");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,
+                        "setParameter() takes parameter id (string), and value (float) arguments");
+        return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
+    return Py_True;
+}
+
+static PyObject *
+selectProgram(PyObject *self, PyObject *args)
+{
+    PyObject *pyParam;
+
+    if (!PyArg_ParseTuple(args, "S", &pyParam)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "selectProgram() takes parameter id (string) argument");
+        return 0; }
+
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    pd->plugin->selectProgram(PyString_AS_STRING(pyParam));
     return Py_True;
 }
 
@@ -353,24 +377,24 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
 }
 
 static PyObject *
-vampyhost_process(PyObject *self, PyObject *args)
+process(PyObject *self, PyObject *args)
 {
     PyObject *pyBuffer;
     PyObject *pyRealTime;
 
     if (!PyArg_ParseTuple(args, "OO",
-			  &pyBuffer,			// Audio data
-			  &pyRealTime)) {		// TimeStamp
-	PyErr_SetString(PyExc_TypeError,
-			"process() takes plugin handle (object), buffer (2D array of channels * samples floats) and timestamp (RealTime) arguments");
-	return 0; }
+                          &pyBuffer,                    // Audio data
+                          &pyRealTime)) {               // TimeStamp
+        PyErr_SetString(PyExc_TypeError,
+                        "process() takes plugin handle (object), buffer (2D array of channels * samples floats) and timestamp (RealTime) arguments");
+        return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
-	PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,"Valid timestamp required.");
+        return 0; }
 
     if (!PyList_Check(pyBuffer)) {
-	PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+        PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
         return 0;
     }
 
@@ -378,16 +402,16 @@ vampyhost_process(PyObject *self, PyObject *args)
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
-	PyErr_SetString(PyExc_StandardError,
-			"Plugin has not been initialised.");
-	return 0;
+        PyErr_SetString(PyExc_StandardError,
+                        "Plugin has not been initialised.");
+        return 0;
     }
 
     int channels =  pd->channels;
 
     if (PyList_GET_SIZE(pyBuffer) != channels) {
         cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
-	PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
+        PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
         return 0;
     }
 
@@ -420,15 +444,15 @@ vampyhost_process(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
+getRemainingFeatures(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
-	PyErr_SetString(PyExc_StandardError,
-			"Plugin has not been initialised.");
-	return 0;
+        PyErr_SetString(PyExc_StandardError,
+                        "Plugin has not been initialised.");
+        return 0;
     }
 
     Plugin::FeatureSet fs = pd->plugin->getRemainingFeatures();
@@ -437,7 +461,7 @@ vampyhost_getRemainingFeatures(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getPreferredBlockSize(PyObject *self, PyObject *)
+getPreferredBlockSize(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -445,7 +469,7 @@ vampyhost_getPreferredBlockSize(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getPreferredStepSize(PyObject *self, PyObject *)
+getPreferredStepSize(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -453,7 +477,7 @@ vampyhost_getPreferredStepSize(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getMinChannelCount(PyObject *self, PyObject *)
+getMinChannelCount(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -461,7 +485,7 @@ vampyhost_getMinChannelCount(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getMaxChannelCount(PyObject *self, PyObject *)
+getMaxChannelCount(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -469,7 +493,7 @@ vampyhost_getMaxChannelCount(PyObject *self, PyObject *)
 }
     
 static PyObject *
-vampyhost_unload(PyObject *self, PyObject *)
+unload(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -484,13 +508,16 @@ vampyhost_unload(PyObject *self, PyObject *)
 static PyMemberDef PyPluginObject_members[] =
 {
     {(char *)"info", T_OBJECT, offsetof(PyPluginObject, info), READONLY,
-     xx_foo_doc},
+     (char *)"info -> A read-only dictionary of plugin metadata."},
 
     {(char *)"inputDomain", T_INT, offsetof(PyPluginObject, inputDomain), READONLY,
-     xx_foo_doc},
+     (char *)"inputDomain -> The format of input audio required by the plugin, either vampyhost.TimeDomain or vampyhost.FrequencyDomain."},
 
     {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,
-     xx_foo_doc},
+     (char *)"parameters -> A list of metadata dictionaries describing the plugin's configurable parameters."},
+
+    {(char *)"programs", T_OBJECT, offsetof(PyPluginObject, programs), READONLY,
+     (char *)"programs -> A list of the programs available for this plugin, if any."},
     
     {0, 0}
 };
@@ -498,40 +525,43 @@ static PyMemberDef PyPluginObject_members[] =
 static PyMethodDef PyPluginObject_methods[] =
 {
     {"getOutputs", getOutputs, METH_NOARGS,
-     xx_foo_doc},
+     "getOutputs() -> Obtain the output descriptors for all of the plugin's outputs."},
 
-    {"getParameterValue",	vampyhost_getParameter, METH_VARARGS,
-     xx_foo_doc}, //!!! fix all these!
+    {"getParameterValue", getParameter, METH_VARARGS,
+     "getParameterValue(identifier) -> Return the value of the parameter with the given identifier."},
 
-    {"setParameterValue",	vampyhost_setParameter, METH_VARARGS,
-     xx_foo_doc},
+    {"setParameterValue", setParameter, METH_VARARGS,
+     "setParameterValue(identifier, value) -> Set the parameter with the given identifier to the given value."},
 
-    {"getPreferredBlockSize",	vampyhost_getPreferredBlockSize, METH_VARARGS,
-     xx_foo_doc}, //!!! fix all these!
-
-    {"getPreferredStepSize",	vampyhost_getPreferredStepSize, METH_VARARGS,
-     xx_foo_doc},
-
-    {"getMinChannelCount",	vampyhost_getMinChannelCount, METH_VARARGS,
-     xx_foo_doc}, //!!! fix all these!
-
-    {"getMaxChannelCount",	vampyhost_getMaxChannelCount, METH_VARARGS,
-     xx_foo_doc},
+    {"selectProgram", selectProgram, METH_VARARGS,
+     "selectProgram(name) -> Select the processing program with the given name."},
     
-    {"initialise",	vampyhost_initialise, METH_VARARGS,
-     xx_foo_doc},
+    {"getPreferredBlockSize", getPreferredBlockSize, METH_VARARGS,
+     "getPreferredBlockSize() -> Return the plugin's preferred processing block size, or 0 if the plugin accepts any block size."},
 
-    {"reset",	vampyhost_reset, METH_NOARGS,
-     xx_foo_doc},
+    {"getPreferredStepSize", getPreferredStepSize, METH_VARARGS,
+     "getPreferredStepSize() -> Return the plugin's preferred processing step size, or 0 if the plugin allows the host to select. If this is 0, the host should normally choose the same step as block size for time-domain plugins, or half the block size for frequency-domain plugins."},
 
-    {"process",	vampyhost_process, METH_VARARGS,
-     xx_foo_doc},
+    {"getMinChannelCount", getMinChannelCount, METH_VARARGS,
+     "getMinChannelCount() -> Return the minimum number of channels of audio data the plugin accepts as input."},
 
-    {"getRemainingFeatures",	vampyhost_getRemainingFeatures, METH_NOARGS,
-     xx_foo_doc},
+    {"getMaxChannelCount", getMaxChannelCount, METH_VARARGS,
+     "getMaxChannelCount() -> Return the maximum number of channels of audio data the plugin accepts as input."},
+    
+    {"initialise", initialise, METH_VARARGS,
+     "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before process() can be used."},
 
-    {"unload", vampyhost_unload, METH_NOARGS,
-     xx_foo_doc},
+    {"reset", reset, METH_NOARGS,
+     "reset() -> Reset the plugin after processing, to prepare for another processing run with the same parameters."},
+
+    {"process", process, METH_VARARGS,
+     "process(block, timestamp) -> Provide one processing frame to the plugin, with its timestamp, and obtain any features that were extracted immediately from this frame."},
+
+    {"getRemainingFeatures", getRemainingFeatures, METH_NOARGS,
+     "getRemainingFeatures() -> Obtain any features extracted at the end of processing."},
+
+    {"unload", unload, METH_NOARGS,
+     "unload() -> Dispose of the plugin. You cannot use the plugin object again after calling this. Note that unloading also happens automatically when the plugin object's reference count reaches zero; this function is only necessary if you wish to ensure the native part of the plugin is disposed of before then."},
     
     {0, 0}
 };
@@ -540,45 +570,45 @@ static PyMethodDef PyPluginObject_methods[] =
 PyTypeObject Plugin_Type = 
 {
     PyObject_HEAD_INIT(NULL)
-    0,						/*ob_size*/
-    "vampyhost.Plugin",				/*tp_name*/
-    sizeof(PyPluginObject),	/*tp_basicsize*/
-    0,		/*tp_itemsize*/
+    0,                                  /*ob_size*/
+    "vampyhost.Plugin",                 /*tp_name*/
+    sizeof(PyPluginObject),             /*tp_basicsize*/
+    0,                                  /*tp_itemsize*/
     (destructor)PyPluginObject_dealloc, /*tp_dealloc*/
-    0,						/*tp_print*/
-    0, /*tp_getattr*/
-    0, /*tp_setattr*/
-    0,						/*tp_compare*/
-    0,			/*tp_repr*/
-    0,	/*tp_as_number*/
-    0,						/*tp_as_sequence*/
-    0,						/*tp_as_mapping*/
-    0,						/*tp_hash*/
-    0,                      /*tp_call*/
-    0,                      /*tp_str*/
-    PyObject_GenericGetAttr,                      /*tp_getattro*/
-    PyObject_GenericSetAttr,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
-    "Plugin Object",      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    0,                      /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    PyPluginObject_methods,       /*tp_methods*/ 
-    PyPluginObject_members,                      /*tp_members*/
-    0,                      /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
-    PyType_GenericAlloc,         /*tp_alloc*/
-    0,           /*tp_new*/
-    PyObject_Del,			/*tp_free*/
-    0,                      /*tp_is_gc*/
+    0,                                  /*tp_print*/
+    0,                                  /*tp_getattr*/
+    0,                                  /*tp_setattr*/
+    0,                                  /*tp_compare*/
+    0,                                  /*tp_repr*/
+    0,                                  /*tp_as_number*/
+    0,                                  /*tp_as_sequence*/
+    0,                                  /*tp_as_mapping*/
+    0,                                  /*tp_hash*/
+    0,                                  /*tp_call*/
+    0,                                  /*tp_str*/
+    PyObject_GenericGetAttr,            /*tp_getattro*/
+    PyObject_GenericSetAttr,            /*tp_setattro*/
+    0,                                  /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,                 /*tp_flags*/
+    "Vamp plugin object.",                    /*tp_doc*/
+    0,                                  /*tp_traverse*/
+    0,                                  /*tp_clear*/
+    0,                                  /*tp_richcompare*/
+    0,                                  /*tp_weaklistoffset*/
+    0,                                  /*tp_iter*/
+    0,                                  /*tp_iternext*/
+    PyPluginObject_methods,             /*tp_methods*/ 
+    PyPluginObject_members,             /*tp_members*/
+    0,                                  /*tp_getset*/
+    0,                                  /*tp_base*/
+    0,                                  /*tp_dict*/
+    0,                                  /*tp_descr_get*/
+    0,                                  /*tp_descr_set*/
+    0,                                  /*tp_dictoffset*/
+    0,                                  /*tp_init*/
+    PyType_GenericAlloc,                /*tp_alloc*/
+    0,                                  /*tp_new*/
+    PyObject_Del,                       /*tp_free*/
+    0,                                  /*tp_is_gc*/
 };
 

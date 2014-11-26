@@ -7,14 +7,14 @@ rate = 44100
 
 def test_inputdomain():
     plug = vh.loadPlugin(testPluginKey, rate)
-    assert(plug.inputDomain == vh.TimeDomain)
+    assert plug.inputDomain == vh.TimeDomain
 
 def test_info():
     plug = vh.loadPlugin(testPluginKey, rate)
-    assert(plug.info["identifier"] == "vamp-test-plugin")
+    assert plug.info["identifier"] == "vamp-test-plugin"
     
 def test_parameterdescriptors():
     plug = vh.loadPlugin(testPluginKey, rate)
-    assert(plug.parameters[0]["identifier"] == "produce_output")
+    assert plug.parameters[0]["identifier"] == "produce_output"
 
     

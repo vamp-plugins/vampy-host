@@ -35,7 +35,7 @@
     authorization.
 */
 
-//include for python extension module: must be first
+// include for python extension module: must be first
 #include <Python.h>
 
 // define a unique API pointer 
@@ -63,12 +63,10 @@ using namespace std;
 using namespace Vamp;
 using namespace Vamp::HostExt;
 
-PyDoc_STRVAR(xx_foo_doc, "Some description"); //!!!
-
 //!!! todo: conv errors
 
 static PyObject *
-vampyhost_enumeratePlugins(PyObject *self, PyObject *)
+enumeratePlugins(PyObject *self, PyObject *)
 {
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
@@ -77,7 +75,7 @@ vampyhost_enumeratePlugins(PyObject *self, PyObject *)
 }
 
 static PyObject *
-vampyhost_getPluginPath(PyObject *self, PyObject *)
+getPluginPath(PyObject *self, PyObject *)
 {
     vector<string> path = PluginHostAdapter::getPluginPath();
     VectorConversion conv;
@@ -92,23 +90,23 @@ static string toPluginKey(PyObject *pyPluginKey)
     // check pluginKey validity
     string::size_type ki = pluginKey.find(':');
     if (ki == string::npos) {
-	PyErr_SetString(PyExc_TypeError,
-			"Plugin key must be of the form library:identifier");
-       	return "";
+        PyErr_SetString(PyExc_TypeError,
+                        "Plugin key must be of the form library:identifier");
+        return "";
     }
 
     return pluginKey;
 }
 
 static PyObject *
-vampyhost_getLibraryFor(PyObject *self, PyObject *args)
+getLibraryFor(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
-	PyErr_SetString(PyExc_TypeError,
-			"getLibraryPathForPlugin() takes plugin key (string) argument");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,
+                        "getLibraryPathForPlugin() takes plugin key (string) argument");
+        return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
     if (pluginKey == "") return 0;
@@ -120,35 +118,35 @@ vampyhost_getLibraryFor(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-vampyhost_getPluginCategory(PyObject *self, PyObject *args)
+getPluginCategory(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
-	PyErr_SetString(PyExc_TypeError,
-			"getPluginCategory() takes plugin key (string) argument");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,
+                        "getPluginCategory() takes plugin key (string) argument");
+        return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
     if (pluginKey == "") return 0;
 
     PluginLoader *loader = PluginLoader::getInstance();
     PluginLoader::PluginCategoryHierarchy
-	category = loader->getPluginCategory(pluginKey);
+        category = loader->getPluginCategory(pluginKey);
 
     VectorConversion conv;
     return conv.PyValue_From_StringVector(category);
 }
 
 static PyObject *
-vampyhost_getOutputList(PyObject *self, PyObject *args)
+getOutputList(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
-	PyErr_SetString(PyExc_TypeError,
-			"getOutputList() takes plugin key (string) argument");
-	return 0; }
+        PyErr_SetString(PyExc_TypeError,
+                        "getOutputList() takes plugin key (string) argument");
+        return 0; }
 
     Plugin::OutputList outputs;
 
@@ -170,26 +168,26 @@ vampyhost_getOutputList(PyObject *self, PyObject *args)
     PyObject *pyList = PyList_New(outputs.size());
 
     for (size_t i = 0; i < outputs.size(); ++i) {
-	PyObject *pyOutputId =
-	    PyString_FromString(outputs[i].identifier.c_str());
-	PyList_SET_ITEM(pyList, i, pyOutputId);
+        PyObject *pyOutputId =
+            PyString_FromString(outputs[i].identifier.c_str());
+        PyList_SET_ITEM(pyList, i, pyOutputId);
     }
 
     return pyList;
 }
 
 static PyObject *
-vampyhost_loadPlugin(PyObject *self, PyObject *args)
+loadPlugin(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
     float inputSampleRate;
 
     if (!PyArg_ParseTuple(args, "Sf",
-			  &pyPluginKey,
-			  &inputSampleRate)) {
-	PyErr_SetString(PyExc_TypeError,
-			"loadPlugin() takes plugin key (string) and sample rate (float) arguments");
-	return 0; }
+                          &pyPluginKey,
+                          &inputSampleRate)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "loadPlugin() takes plugin key (string) and sample rate (float) arguments");
+        return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
     if (pluginKey == "") return 0;
@@ -199,9 +197,9 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
     Plugin *plugin = loader->loadPlugin(pluginKey, inputSampleRate,
                                         PluginLoader::ADAPT_ALL_SAFE);
     if (!plugin) {
-	string pyerr("Failed to load plugin: "); pyerr += pluginKey;
-	PyErr_SetString(PyExc_TypeError,pyerr.c_str());
-	return 0;
+        string pyerr("Failed to load plugin: "); pyerr += pluginKey;
+        PyErr_SetString(PyExc_TypeError,pyerr.c_str());
+        return 0;
     }
 
     return PyPluginObject_From_Plugin(plugin);
@@ -210,29 +208,28 @@ vampyhost_loadPlugin(PyObject *self, PyObject *args)
 // module methods table
 static PyMethodDef vampyhost_methods[] = {
 
-    {"listPlugins",	vampyhost_enumeratePlugins,	METH_NOARGS,
-     xx_foo_doc},
+    {"listPlugins", enumeratePlugins, METH_NOARGS,
+     "listPlugins() -> Return a list of the plugin keys of all installed Vamp plugins." },
 
-    {"getPluginPath",	vampyhost_getPluginPath, METH_NOARGS,
-     xx_foo_doc},
+    {"getPluginPath", getPluginPath, METH_NOARGS,
+     "getPluginPath() -> Return a list of directories which will be searched for Vamp plugins. This may be changed by setting the VAMP_PATH environment variable."},
 
-    {"getCategoryOf",	vampyhost_getPluginCategory, METH_VARARGS,
-     xx_foo_doc},
+    {"getCategoryOf", getPluginCategory, METH_VARARGS,
+     "getCategoryOf(pluginKey) -> Return the category of a Vamp plugin given its key, if known. The category is expressed as a list of nested types from least to most specific."},
 
-    {"getLibraryFor",	vampyhost_getLibraryFor, METH_VARARGS,
-     xx_foo_doc},
+    {"getLibraryFor", getLibraryFor, METH_VARARGS,
+     "getLibraryFor(pluginKey) -> Return the file path of the Vamp plugin library in which the given plugin key is found, or an empty string if the plugin is not installed."},
 
-    {"getOutputsOf",	vampyhost_getOutputList, METH_VARARGS,
-     xx_foo_doc},
+    {"getOutputsOf", getOutputList, METH_VARARGS,
+     "getOutputsOf(pluginKey) -> Return a list of the output identifiers of the plugin with the given key, if installed."},
 
-    {"loadPlugin",	vampyhost_loadPlugin, METH_VARARGS,
-     xx_foo_doc},
+    {"loadPlugin", loadPlugin, METH_VARARGS,
+     "loadPlugin(pluginKey, samplerate) -> Load the plugin that has the given key, if installed, and return the plugin object."},
 
-    {0,		0}		/* sentinel */
+    {0, 0}              /* sentinel */
 };
 
-//Documentation for our new module
-PyDoc_STRVAR(module_doc, "This is a template module just for instruction.");
+PyDoc_STRVAR(module_doc, "Load and run Vamp audio analysis plugins.");
 
 static int
 setint(PyObject *d, const char *name, int value)

@@ -54,6 +54,7 @@ struct PyPluginObject
     PyObject *info;
     int inputDomain;
     PyObject *parameters;
+    PyObject *programs;
 };
 
 PyAPI_DATA(PyTypeObject) Plugin_Type;

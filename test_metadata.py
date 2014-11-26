@@ -17,7 +17,14 @@ def test_path():
 
 def test_getlibrary():
     lib = vh.getLibraryFor(testPluginKey)
-    assert lib != ""
+    assert lib.find("vamp-test-plugin") >= 0
+    try:
+        lib = vh.getLibraryFor("not a well-formatted plugin key")
+        assert False
+    except TypeError:
+        pass
+    lib = vh.getLibraryFor("nonexistent-library:nonexistent-plugin")
+    assert lib == ""
 
 def test_getoutputlist():
     outputs = vh.getOutputsOf(testPluginKey)

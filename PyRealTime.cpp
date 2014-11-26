@@ -52,51 +52,51 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
     const char *fmt = NULL;
 
     if (
-	/// new RealTime from ('format',float) e.g. ('seconds',2.34123)   
-	!PyArg_ParseTuple(args, "|sd:RealTime.new ", 
-			  (const char *) &fmt, 
-			  (double *) &unary) 	&&
+        /// new RealTime from ('format',float) e.g. ('seconds',2.34123)   
+        !PyArg_ParseTuple(args, "|sd:RealTime.new ", 
+                          (const char *) &fmt, 
+                          (double *) &unary)    &&
 
-	/// new RealTime from (sec{int},nsec{int}) e.g. (2,34)
-	!PyArg_ParseTuple(args, "|II:RealTime.new ", 
-			  (unsigned int*) &sec, 
-			  (unsigned int*) &nsec) 
-		
-	) { 
-	PyErr_SetString(PyExc_TypeError, 
-			"RealTime initialised with wrong arguments.");
-	return NULL; 
+        /// new RealTime from (sec{int},nsec{int}) e.g. (2,34)
+        !PyArg_ParseTuple(args, "|II:RealTime.new ", 
+                          (unsigned int*) &sec, 
+                          (unsigned int*) &nsec) 
+                
+        ) { 
+        PyErr_SetString(PyExc_TypeError, 
+                        "RealTime initialised with wrong arguments.");
+        return NULL; 
     }
 
     // PyErr_Clear();
 
     // RealTimeObject *self = PyObject_New(RealTimeObject, &RealTime_Type); 
     RealTimeObject *self = (RealTimeObject*)type->tp_alloc(type, 0);
-	
+        
     if (self == NULL) return NULL;
 
     self->rt = NULL;
 
     if (sec == 0 && nsec == 0 && fmt == 0) 
-	self->rt = new RealTime();
+        self->rt = new RealTime();
     else if (fmt == 0)
-	self->rt = new RealTime(sec,nsec);
+        self->rt = new RealTime(sec,nsec);
     else { 
         /// new RealTime from seconds or milliseconds: i.e. >>>RealTime('seconds',12.3)
-	if (!string(fmt).compare("float") ||
-	    !string(fmt).compare("seconds"))  
-	    self->rt = new RealTime( 
-		RealTime::fromSeconds((double) unary)); 
+        if (!string(fmt).compare("float") ||
+            !string(fmt).compare("seconds"))  
+            self->rt = new RealTime( 
+                RealTime::fromSeconds((double) unary)); 
 
-	if (!string(fmt).compare("milliseconds")) {
-	    self->rt = new RealTime( 
-		RealTime::fromSeconds((double) unary / 1000.0)); }
+        if (!string(fmt).compare("milliseconds")) {
+            self->rt = new RealTime( 
+                RealTime::fromSeconds((double) unary / 1000.0)); }
     }
 
     if (!self->rt) { 
-	PyErr_SetString(PyExc_TypeError, 
-			"RealTime initialised with wrong arguments.");
-	return NULL; 
+        PyErr_SetString(PyExc_TypeError, 
+                        "RealTime initialised with wrong arguments.");
+        return NULL; 
     }
 
     return (PyObject *) self;
@@ -106,7 +106,7 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
 static void
 RealTimeObject_dealloc(RealTimeObject *self)
 {
-    if (self->rt) delete self->rt; 	//delete the C object
+    if (self->rt) delete self->rt;      //delete the C object
     PyObject_Del(self); //delete the Python object (original)
     /// this requires PyType_Ready() which fills ob_type
     // self->ob_type->tp_free((PyObject*)self); 
@@ -134,17 +134,17 @@ static PyObject *
 RealTime_toFrame(PyObject *self, PyObject *args)
 {
     unsigned int samplerate;
-	
+        
     if ( !PyArg_ParseTuple(args, "I:realtime.toFrame object ", 
-			   (unsigned int *) &samplerate )) {
-	PyErr_SetString(PyExc_ValueError,"Integer Sample Rate Required.");
-	return NULL;
+                           (unsigned int *) &samplerate )) {
+        PyErr_SetString(PyExc_ValueError,"Integer Sample Rate Required.");
+        return NULL;
     }
-	
+        
     return Py_BuildValue("k", 
-			 RealTime::realTime2Frame( 
-			     *(const RealTime*) ((RealTimeObject*)self)->rt, 
-			     (unsigned int) samplerate));
+                         RealTime::realTime2Frame( 
+                             *(const RealTime*) ((RealTimeObject*)self)->rt, 
+                             (unsigned int) samplerate));
 }
 
 /* Conversion of realtime to a double precision floating point value */
@@ -153,27 +153,27 @@ static PyObject *
 RealTime_float(PyObject *s)
 {
     double drt = ((double) ((RealTimeObject*)s)->rt->sec + 
-		  (double)((double) ((RealTimeObject*)s)->rt->nsec)/1000000000);
-    return PyFloat_FromDouble(drt);	
+                  (double)((double) ((RealTimeObject*)s)->rt->nsec)/1000000000);
+    return PyFloat_FromDouble(drt);     
 }
 
 
 /* Type object's (RealTime) methods table */
 static PyMethodDef RealTime_methods[] = 
 {
-    {"values",	(PyCFunction)RealTime_values,	METH_NOARGS,
+    {"values",  (PyCFunction)RealTime_values,   METH_NOARGS,
      PyDoc_STR("values() -> Tuple of sec,nsec representation.")},
 
-    {"toString",	(PyCFunction)RealTime_toString,	METH_NOARGS,
+    {"toString",        (PyCFunction)RealTime_toString, METH_NOARGS,
      PyDoc_STR("toString() -> Return a user-readable string to the nearest millisecond in a form like HH:MM:SS.mmm")},
 
-    {"toFrame",	(PyCFunction)RealTime_toFrame,	METH_VARARGS,
+    {"toFrame", (PyCFunction)RealTime_toFrame,  METH_VARARGS,
      PyDoc_STR("toFrame(samplerate) -> Sample count for given sample rate.")},
 
-    {"toFloat",	(PyCFunction)RealTime_float,	METH_NOARGS,
+    {"toFloat", (PyCFunction)RealTime_float,    METH_NOARGS,
      PyDoc_STR("toFloat() -> Floating point representation.")},
-	
-    {NULL,		NULL}		/* sentinel */
+        
+    {NULL,              NULL}           /* sentinel */
 };
 
 
@@ -187,13 +187,13 @@ RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 {
 
     if ( !string(name).compare("sec")) { 
-	self->rt->sec= (int) PyInt_AS_LONG(value);
-	return 0;
+        self->rt->sec= (int) PyInt_AS_LONG(value);
+        return 0;
     }
 
     if ( !string(name).compare("nsec")) { 
-	self->rt->nsec= (int) PyInt_AS_LONG(value);
-	return 0;
+        self->rt->nsec= (int) PyInt_AS_LONG(value);
+        return 0;
     }
 
     return -1;
@@ -204,17 +204,17 @@ RealTime_getattr(RealTimeObject *self, char *name)
 {
 
     if ( !string(name).compare("sec") ) { 
-	return PyInt_FromSsize_t(
-	    (Py_ssize_t) self->rt->sec); 
+        return PyInt_FromSsize_t(
+            (Py_ssize_t) self->rt->sec); 
     } 
 
     if ( !string(name).compare("nsec") ) { 
-	return PyInt_FromSsize_t(
-	    (Py_ssize_t) self->rt->nsec); 
+        return PyInt_FromSsize_t(
+            (Py_ssize_t) self->rt->nsec); 
     } 
 
     return Py_FindMethod(RealTime_methods, 
-			 (PyObject *)self, name);
+                         (PyObject *)self, name);
 }
 
 /* String representation called by e.g. str(realtime), print realtime*/
@@ -222,7 +222,7 @@ static PyObject *
 RealTime_repr(PyObject *self)
 {
     return Py_BuildValue("s",
-			 ((RealTimeObject*)self)->rt->toString().c_str());
+                         ((RealTimeObject*)self)->rt->toString().c_str());
 }
 
 
@@ -233,11 +233,11 @@ static PyObject *
 RealTime_add(PyObject *s, PyObject *w)
 {
     RealTimeObject *result = 
-	PyObject_New(RealTimeObject, &RealTime_Type); 
+        PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
 
     result->rt = new RealTime(
-	*((RealTimeObject*)s)->rt + *((RealTimeObject*)w)->rt);
+        *((RealTimeObject*)s)->rt + *((RealTimeObject*)w)->rt);
     return (PyObject*)result;
 }
 
@@ -245,39 +245,39 @@ static PyObject *
 RealTime_subtract(PyObject *s, PyObject *w)
 {
     RealTimeObject *result = 
-	PyObject_New(RealTimeObject, &RealTime_Type); 
+        PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
 
     result->rt = new RealTime(
-	*((RealTimeObject*)s)->rt - *((RealTimeObject*)w)->rt);
+        *((RealTimeObject*)s)->rt - *((RealTimeObject*)w)->rt);
     return (PyObject*)result;
 }
 
 static PyNumberMethods realtime_as_number = 
 {
-    RealTime_add,			/*nb_add*/
-    RealTime_subtract,		/*nb_subtract*/
-    0,						/*nb_multiply*/
-    0,				 		/*nb_divide*/
-    0,						/*nb_remainder*/
-    0,      	            /*nb_divmod*/
-    0,                   	/*nb_power*/
-    0,                  	/*nb_neg*/
-    0,                		/*nb_pos*/
-    0,                  	/*(unaryfunc)array_abs,*/
-    0,                    	/*nb_nonzero*/
-    0,                    	/*nb_invert*/
-    0,       				/*nb_lshift*/
-    0,      				/*nb_rshift*/
-    0,      				/*nb_and*/
-    0,      				/*nb_xor*/
-    0,       				/*nb_or*/
+    RealTime_add,                       /*nb_add*/
+    RealTime_subtract,          /*nb_subtract*/
+    0,                                          /*nb_multiply*/
+    0,                                          /*nb_divide*/
+    0,                                          /*nb_remainder*/
+    0,                      /*nb_divmod*/
+    0,                          /*nb_power*/
+    0,                          /*nb_neg*/
+    0,                          /*nb_pos*/
+    0,                          /*(unaryfunc)array_abs,*/
+    0,                          /*nb_nonzero*/
+    0,                          /*nb_invert*/
+    0,                                  /*nb_lshift*/
+    0,                                  /*nb_rshift*/
+    0,                                  /*nb_and*/
+    0,                                  /*nb_xor*/
+    0,                                  /*nb_or*/
     0,                      /*nb_coerce*/
-    0,						/*nb_int*/
-    0,				        /*nb_long*/
+    0,                                          /*nb_int*/
+    0,                                  /*nb_long*/
     (unaryfunc)RealTime_float,/*nb_float*/
-    0,               		/*nb_oct*/
-    0,               		/*nb_hex*/
+    0,                          /*nb_oct*/
+    0,                          /*nb_hex*/
 };
 
 /* REAL-TIME TYPE OBJECT */
@@ -289,28 +289,28 @@ static PyNumberMethods realtime_as_number =
 PyTypeObject RealTime_Type = 
 {
     PyObject_HEAD_INIT(NULL)
-    0,						/*ob_size*/
-    "vampy.RealTime",				/*tp_name*/
-    sizeof(RealTimeObject),	/*tp_basicsize*/
-    0,//sizeof(RealTime),		/*tp_itemsize*/
-    /*	 	methods	 	*/
+    0,                          /*ob_size*/
+    "vampy.RealTime",           /*tp_name*/
+    sizeof(RealTimeObject),     /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    /*          methods         */
     (destructor)RealTimeObject_dealloc, /*tp_dealloc*/
-    0,						/*tp_print*/
+    0,                                  /*tp_print*/
     (getattrfunc)RealTime_getattr, /*tp_getattr*/
     (setattrfunc)RealTime_setattr, /*tp_setattr*/
-    0,						/*tp_compare*/
-    RealTime_repr,			/*tp_repr*/
-    &realtime_as_number,	/*tp_as_number*/
-    0,						/*tp_as_sequence*/
-    0,						/*tp_as_mapping*/
-    0,						/*tp_hash*/
-    0,//(ternaryfunc)RealTime_new,                      /*tp_call*/
+    0,                             /*tp_compare*/
+    RealTime_repr,                 /*tp_repr*/
+    &realtime_as_number,        /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash*/
+    0,                      /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
-    "RealTime Object",      /*tp_doc*/
+    "RealTime object, used for Vamp plugin timestamps.",      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
@@ -328,7 +328,7 @@ PyTypeObject RealTime_Type =
     0,                      /*tp_init*/
     RealTime_alloc,         /*tp_alloc*/
     RealTime_new,           /*tp_new*/
-    RealTime_free,			/*tp_free*/
+    RealTime_free,          /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
@@ -341,7 +341,7 @@ PyObject*
 PyRealTime_FromRealTime(const Vamp::RealTime& rt) {
 
     RealTimeObject *self =
-	PyObject_New(RealTimeObject, &RealTime_Type); 
+        PyObject_New(RealTimeObject, &RealTime_Type); 
     if (self == NULL) return NULL;
 
     self->rt = new RealTime(rt);
@@ -355,9 +355,9 @@ PyRealTime_AsRealTime (PyObject *self) {
     RealTimeObject *s = (RealTimeObject*) self; 
 
     if (!PyRealTime_Check(s)) {
-	PyErr_SetString(PyExc_TypeError, "RealTime Object Expected.");
-	cerr << "in call PyRealTime_AsPointer(): RealTime Object Expected. " << endl;
-	return NULL; }
+        PyErr_SetString(PyExc_TypeError, "RealTime Object Expected.");
+        cerr << "in call PyRealTime_AsPointer(): RealTime Object Expected. " << endl;
+        return NULL; }
     return s->rt; 
 };
 
