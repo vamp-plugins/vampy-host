@@ -25,9 +25,4 @@ def test_getlibrary():
         pass
     lib = vh.getLibraryFor("nonexistent-library:nonexistent-plugin")
     assert lib == ""
-
-def test_getoutputlist():
-    outputs = vh.getOutputsOf(testPluginKey)
-    assert len(outputs) == 8
-    assert "curve-vsr" in outputs
     

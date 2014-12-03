@@ -58,4 +58,16 @@ def test_process_input_format():
     except TypeError:
         pass
 
+def test_process_output_1ch():
+    plug = vh.loadPlugin(testPluginKey, rate)
+    plug.initialise(1, 2, 2)
+    try:
+        # Too many channels
+        result = plug.process([[3,4],[5,6]], vh.RealTime(0, 0))
+        assert False
+    except TypeError:
+        pass
+    result = plug.process([[3,3]], vh.RealTime(0, 0))
+    assert result[8] == [ { "label" : "", "values" : np.array([3.0]) } ]
 
+    

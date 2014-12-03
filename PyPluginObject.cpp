@@ -401,10 +401,10 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
     } else {
         
         if (!PyList_Check(pyBuffer)) {
-            PyErr_SetString(PyExc_TypeError, "List of NumPy Array required for process input.");
+            PyErr_SetString(PyExc_TypeError, "List of NumPy arrays or lists of numbers required for process input");
             return data;
         }
-
+        
         if (PyList_GET_SIZE(pyBuffer) != channels) {
 //            cerr << "Wrong number of channels: got " << PyList_GET_SIZE(pyBuffer) << ", expected " << channels << endl;
             PyErr_SetString(PyExc_TypeError, "Wrong number of channels");
@@ -414,6 +414,10 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
         for (int c = 0; c < channels; ++c) {
             PyObject *cbuf = PyList_GET_ITEM(pyBuffer, c);
             data.push_back(conv.PyValue_To_FloatVector(cbuf));
+            if (conv.error) {
+                PyErr_SetString(PyExc_TypeError, conv.getError().str().c_str());
+                return vector<vector<float> >();
+            }
         }
     }
     
