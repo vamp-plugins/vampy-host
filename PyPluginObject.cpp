@@ -55,8 +55,6 @@
 using namespace std;
 using namespace Vamp;
 
-//!!! todo: conv errors
-
 static
 PyPluginObject *
 getPluginObject(PyObject *pyPluginHandle)
@@ -424,7 +422,7 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
     for (int c = 0; c < channels; ++c) {
         if ((int)data[c].size() != blockSize) {
 //            cerr << "Wrong number of samples on channel " << c << ": expected " << blockSize << " (plugin's block size), got " << data[c].size() << endl;
-            PyErr_SetString(PyExc_TypeError, "Wrong number of samples");
+            PyErr_SetString(PyExc_TypeError, "Wrong number of samples for process block");
             return vector<vector<float> >();
         }
     }

@@ -63,8 +63,6 @@ using namespace std;
 using namespace Vamp;
 using namespace Vamp::HostExt;
 
-//!!! todo: conv errors
-
 static PyObject *
 enumeratePlugins(PyObject *self, PyObject *)
 {
