@@ -70,4 +70,41 @@ def test_process_output_1ch():
     result = plug.process([[3,3]], vh.RealTime(0, 0))
     assert result[8] == [ { "label" : "", "values" : np.array([3.0]) } ]
 
+def test_process_output_2ch():
+    plug = vh.loadPlugin(testPluginKey, rate)
+    plug.initialise(2, 2, 2)
+    try:
+        # Too few channels
+        result = plug.process([[3,4]], vh.RealTime(0, 0))
+        assert False
+    except TypeError:
+        pass
+    try:
+        # Too many channels
+        result = plug.process([[3,4],[5,6],[7,8]], vh.RealTime(0, 0))
+        assert False
+    except TypeError:
+        pass
+    result = plug.process([[3,3],[4,4]], vh.RealTime(0, 0))
+    assert (result[8][0]["values"] == np.array([3.0,4.0])).all()
+
+def test_process_output_3ch():
+    plug = vh.loadPlugin(testPluginKey, rate)
+    plug.initialise(3, 2, 2)
+    try:
+        # Too few channels
+        result = plug.process([[3,4],[5,6]], vh.RealTime(0, 0))
+        assert False
+    except TypeError:
+        pass
+    try:
+        # Too many channels
+        result = plug.process([[3,4],[5,6],[7,8],[9,10]], vh.RealTime(0, 0))
+        assert False
+    except TypeError:
+        pass
+    result = plug.process([[3,3],[4,4],[5,5]], vh.RealTime(0, 0))
+    assert (result[8][0]["values"] == np.array([3.0,4.0,5.0])).all()
+
+
     
