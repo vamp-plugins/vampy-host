@@ -8,7 +8,7 @@ rate = 44100
 def test_getoutputlist():
     outputs = vh.getOutputsOf(testPluginKey)
     assert len(outputs) == 9
-    assert "rmss" in outputs
+    assert "input-summary" in outputs
 
 def test_inputdomain():
     plug = vh.loadPlugin(testPluginKey, rate)

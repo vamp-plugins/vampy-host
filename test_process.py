@@ -68,7 +68,9 @@ def test_process_output_1ch():
     except TypeError:
         pass
     result = plug.process([[3,3]], vh.RealTime(0, 0))
-    assert result[8] == [ { "label" : "", "values" : np.array([3.0]) } ]
+    assert result[8] == [ { "label" : "", "values" : np.array([5.0]) } ]
+    result = plug.process([[3,0]], vh.RealTime(0, 0))
+    assert result[8] == [ { "label" : "", "values" : np.array([4.0]) } ]
 
 def test_process_output_2ch():
     plug = vh.loadPlugin(testPluginKey, rate)
@@ -86,7 +88,9 @@ def test_process_output_2ch():
     except TypeError:
         pass
     result = plug.process([[3,3],[4,4]], vh.RealTime(0, 0))
-    assert (result[8][0]["values"] == np.array([3.0,4.0])).all()
+    assert (result[8][0]["values"] == np.array([5.0,6.0])).all()
+    result = plug.process([[3,0],[4,0]], vh.RealTime(0, 0))
+    assert (result[8][0]["values"] == np.array([4.0,5.0])).all()
 
 def test_process_output_3ch():
     plug = vh.loadPlugin(testPluginKey, rate)
@@ -104,7 +108,9 @@ def test_process_output_3ch():
     except TypeError:
         pass
     result = plug.process([[3,3],[4,4],[5,5]], vh.RealTime(0, 0))
-    assert (result[8][0]["values"] == np.array([3.0,4.0,5.0])).all()
+    assert (result[8][0]["values"] == np.array([5.0,6.0,7.0])).all()
+    result = plug.process([[3,0],[4,0],[5,0]], vh.RealTime(0, 0))
+    assert (result[8][0]["values"] == np.array([4.0,5.0,6.0])).all()
 
 
     
