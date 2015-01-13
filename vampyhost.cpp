@@ -153,8 +153,7 @@ getOutputList(PyObject *self, PyObject *args)
 
     PluginLoader *loader = PluginLoader::getInstance();
 
-    Plugin *plugin = loader->loadPlugin
-        (pluginKey, 48000, PluginLoader::ADAPT_ALL_SAFE);
+    Plugin *plugin = loader->loadPlugin(pluginKey, 48000, 0);
     if (!plugin) {
         string pyerr("Failed to load plugin: "); pyerr += pluginKey;
         PyErr_SetString(PyExc_TypeError,pyerr.c_str());
@@ -179,12 +178,14 @@ loadPlugin(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
     float inputSampleRate;
+    int adapterFlags;
 
-    if (!PyArg_ParseTuple(args, "Sf",
+    if (!PyArg_ParseTuple(args, "Sfn",
                           &pyPluginKey,
-                          &inputSampleRate)) {
+                          &inputSampleRate,
+                          &adapterFlags)) {
         PyErr_SetString(PyExc_TypeError,
-                        "loadPlugin() takes plugin key (string) and sample rate (float) arguments");
+                        "loadPlugin() takes plugin key (string), sample rate (float), and adapter flags (int) arguments");
         return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
@@ -192,8 +193,9 @@ loadPlugin(PyObject *self, PyObject *args)
 
     PluginLoader *loader = PluginLoader::getInstance();
 
-    Plugin *plugin = loader->loadPlugin(pluginKey, inputSampleRate,
-                                        PluginLoader::ADAPT_ALL_SAFE);
+    Plugin *plugin = loader->loadPlugin(pluginKey,
+                                        inputSampleRate,
+                                        adapterFlags);
     if (!plugin) {
         string pyerr("Failed to load plugin: "); pyerr += pluginKey;
         PyErr_SetString(PyExc_TypeError,pyerr.c_str());
@@ -278,7 +280,17 @@ initvampyhost(void)
         setint(dict, "TimeDomain",
                Plugin::TimeDomain) < 0 ||
         setint(dict, "FrequencyDomain",
-               Plugin::FrequencyDomain) < 0) {
+               Plugin::FrequencyDomain) < 0 ||
+        setint(dict, "AdaptNone",
+               0) < 0 ||
+        setint(dict, "AdaptChannelCount",
+               PluginLoader::ADAPT_CHANNEL_COUNT) < 0 ||
+        setint(dict, "AdaptBufferSize",
+               PluginLoader::ADAPT_BUFFER_SIZE) < 0 ||
+        setint(dict, "AdaptAllSafe",
+               PluginLoader::ADAPT_ALL_SAFE) < 0 ||
+        setint(dict, "AdaptAll",
+               PluginLoader::ADAPT_ALL) < 0) {
         cerr << "ERROR: initvampyhost: Failed to add enums to module dictionary" << endl;
         return;
     }

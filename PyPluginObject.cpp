@@ -440,7 +440,7 @@ process(PyObject *self, PyObject *args)
                           &pyBuffer,                    // Audio data
                           &pyRealTime)) {               // TimeStamp
         PyErr_SetString(PyExc_TypeError,
-                        "process() takes plugin handle (object), buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
+                        "process() takes buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
         return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
