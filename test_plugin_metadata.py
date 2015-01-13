@@ -21,5 +21,39 @@ def test_info():
 def test_parameterdescriptors():
     plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
     assert plug.parameters[0]["identifier"] == "produce_output"
-
     
+def test_setparameter():
+    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    assert plug.parameters[0]["identifier"] == "produce_output"
+    assert plug.parameters[0]["defaultValue"] == 1
+    assert plug.getParameterValue("produce_output") == plug.parameters[0]["defaultValue"]
+    assert plug.setParameterValue("produce_output", 0) == True
+    assert plug.getParameterValue("produce_output") == 0
+    assert plug.setParameterValues({ "produce_output": 1 }) == True
+    assert plug.getParameterValue("produce_output") == 1
+    try:
+        plug.setParameterValue("produce_output", "fish")
+        assert False
+    except TypeError:
+        pass
+    try:
+        plug.setParameterValue(4, 0)
+        assert False
+    except TypeError:
+        pass
+    try:
+        plug.setParameterValue("steak", 0)
+        assert False
+    except StandardError:
+        pass
+    try:
+        plug.getParameterValue(4)
+        assert False
+    except TypeError:
+        pass
+    try:
+        plug.getParameterValue("steak")
+        assert False
+    except StandardError:
+        pass
+            
