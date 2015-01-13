@@ -4,7 +4,7 @@ LIBRARY		?= vampyhost$(LIBRARY_EXT)
 CXX		?= g++
 CC		?= gcc
 
-HEADERS		:= PyPluginObject.h PyRealTime.h VectorConversion.h
+HEADERS		:= PyPluginObject.h PyRealTime.h FloatConversion.h VectorConversion.h
 SOURCES		:= PyPluginObject.cpp PyRealTime.cpp VectorConversion.cpp vampyhost.cpp
 
 OBJECTS		:= $(SOURCES:.cpp=.o)

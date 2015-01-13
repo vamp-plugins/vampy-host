@@ -40,8 +40,8 @@
   between Python types and C++ vectors.
 */
 
-#ifndef PY_TYPE_CONVERSIONS_H
-#define PY_TYPE_CONVERSIONS_H
+#ifndef VAMPYHOST_VECTOR_CONVERSION_H
+#define VAMPYHOST_VECTOR_CONVERSION_H
 
 #include <Python.h>
 

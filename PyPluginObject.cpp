@@ -45,6 +45,7 @@
 
 #include "structmember.h"
 
+#include "FloatConversion.h"
 #include "VectorConversion.h"
 #include "PyRealTime.h"
 
@@ -272,13 +273,13 @@ reset(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getParameter(PyObject *self, PyObject *args)
+getParameterValue(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
     if (!PyArg_ParseTuple(args, "S", &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
-                        "getParameter() takes parameter id (string) argument");
+                        "getParameterValue() takes parameter id (string) argument");
         return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
@@ -289,20 +290,58 @@ getParameter(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-setParameter(PyObject *self, PyObject *args)
+setParameterValue(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
     float value;
 
     if (!PyArg_ParseTuple(args, "Sf", &pyParam, &value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "setParameter() takes parameter id (string), and value (float) arguments");
+                        "setParameterValue() takes parameter id (string), and value (float) arguments");
         return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
     pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
+    return Py_True;
+}
+
+static PyObject *
+setParameterValues(PyObject *self, PyObject *args)
+{
+    PyObject *dict;
+
+    if (!PyArg_ParseTuple(args, "O", &dict)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "setParameterValues() takes dict argument");
+        return 0; }
+
+    if (!PyDict_Check(dict)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "setParameterValues() takes dict argument");
+        return 0; }
+    
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    Py_ssize_t pos = 0;
+    PyObject *key, *value;
+    while (PyDict_Next(dict, &pos, &key, &value)) {
+        if (!key || !PyString_CheckExact(key)) {
+            PyErr_SetString(PyExc_TypeError,
+                            "Parameter dict keys must all have string type");
+            return 0;
+        }
+        if (!value || !FloatConversion::check(value)) {
+            PyErr_SetString(PyExc_TypeError,
+                            "Parameter dict values must be convertible to float");
+            return 0;
+        }
+        pd->plugin->setParameter(PyString_AS_STRING(key),
+                                 FloatConversion::convert(value));
+    }
+    
     return Py_True;
 }
 
@@ -556,11 +595,14 @@ static PyMethodDef PyPluginObject_methods[] =
     {"getOutputs", getOutputs, METH_NOARGS,
      "getOutputs() -> Obtain the output descriptors for all of the plugin's outputs."},
 
-    {"getParameterValue", getParameter, METH_VARARGS,
+    {"getParameterValue", getParameterValue, METH_VARARGS,
      "getParameterValue(identifier) -> Return the value of the parameter with the given identifier."},
 
-    {"setParameterValue", setParameter, METH_VARARGS,
+    {"setParameterValue", setParameterValue, METH_VARARGS,
      "setParameterValue(identifier, value) -> Set the parameter with the given identifier to the given value."},
+
+    {"setParameterValues", setParameterValues, METH_VARARGS,
+     "setParameterValues(dict) -> Set multiple parameters to values corresponding to the key/value pairs in the dict. Any parameters not mentioned in the dict are unchanged."},
 
     {"selectProgram", selectProgram, METH_VARARGS,
      "selectProgram(name) -> Select the processing program with the given name."},

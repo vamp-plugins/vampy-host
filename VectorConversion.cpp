@@ -37,6 +37,7 @@
 
 #include <Python.h>
 
+#include "FloatConversion.h"
 #include "VectorConversion.h"
 
 #include <math.h>
@@ -61,26 +62,10 @@ VectorConversion::~VectorConversion()
 float 
 VectorConversion::PyValue_To_Float(PyObject* pyValue) const
 {
-    // convert float
-    if (pyValue && PyFloat_Check(pyValue)) {
-        return (float) PyFloat_AS_DOUBLE(pyValue);
+    if (FloatConversion::check(pyValue)) {
+        return FloatConversion::convert(pyValue);
     }
 
-    // convert long
-    if (pyValue && PyLong_Check(pyValue)) {
-        return (float) PyLong_AsDouble(pyValue);
-    }
-
-    // convert int
-    if (pyValue && PyInt_Check(pyValue)) {
-        return (float) PyInt_AsLong(pyValue);
-    }
-
-    if (pyValue == NULL) {
-        setValueError("Error while converting object " + PyValue_Get_TypeName(pyValue) + " to float. ");
-        return 0.0;		
-    }
-		
     setValueError("Conversion error: object" + PyValue_Get_TypeName(pyValue) +" is not float, int, or long.");
     return 0.0;
 }
