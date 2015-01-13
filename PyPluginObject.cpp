@@ -52,6 +52,7 @@
 #include <string>
 #include <vector>
 #include <cstddef>
+#include <set>
 
 using namespace std;
 using namespace Vamp;
@@ -272,6 +273,18 @@ reset(PyObject *self, PyObject *)
     return Py_True;
 }
 
+static bool
+hasParameter(PyPluginObject *pd, string id)
+{
+    PluginBase::ParameterList pl = pd->plugin->getParameterDescriptors();
+    for (int i = 0; i < (int)pl.size(); ++i) {
+        if (pl[i].identifier == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static PyObject *
 getParameterValue(PyObject *self, PyObject *args)
 {
@@ -285,7 +298,15 @@ getParameterValue(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    float value = pd->plugin->getParameter(PyString_AS_STRING(pyParam));
+    string param = PyString_AS_STRING(pyParam);
+    
+    if (!hasParameter(pd, param)) {
+        PyErr_SetString(PyExc_StandardError,
+                        (string("Unknown parameter id \"") + param + "\"").c_str());
+        return 0;
+    }
+    
+    float value = pd->plugin->getParameter(param);
     return PyFloat_FromDouble(double(value));
 }
 
@@ -303,7 +324,15 @@ setParameterValue(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    pd->plugin->setParameter(PyString_AS_STRING(pyParam), value);
+    string param = PyString_AS_STRING(pyParam);
+    
+    if (!hasParameter(pd, param)) {
+        PyErr_SetString(PyExc_StandardError,
+                        (string("Unknown parameter id \"") + param + "\"").c_str());
+        return 0;
+    }
+
+    pd->plugin->setParameter(param, value);
     return Py_True;
 }
 
@@ -325,6 +354,12 @@ setParameterValues(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
+    PluginBase::ParameterList pl = pd->plugin->getParameterDescriptors();
+    set<string> paramIds;
+    for (int i = 0; i < (int)pl.size(); ++i) {
+        paramIds.insert(pl[i].identifier);
+    }
+
     Py_ssize_t pos = 0;
     PyObject *key, *value;
     while (PyDict_Next(dict, &pos, &key, &value)) {
@@ -338,8 +373,13 @@ setParameterValues(PyObject *self, PyObject *args)
                             "Parameter dict values must be convertible to float");
             return 0;
         }
-        pd->plugin->setParameter(PyString_AS_STRING(key),
-                                 FloatConversion::convert(value));
+        string param = PyString_AS_STRING(key);
+        if (paramIds.find(param) == paramIds.end()) {
+            PyErr_SetString(PyExc_StandardError,
+                            (string("Unknown parameter id \"") + param + "\"").c_str());
+            return 0;
+        }
+        pd->plugin->setParameter(param, FloatConversion::convert(value));
     }
     
     return Py_True;
