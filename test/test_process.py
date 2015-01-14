@@ -28,7 +28,7 @@ def test_get_set_parameter():
 def test_process_without_initialise():
     plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
     try:
-        plug.process([[1,2,3,4]], vh.RealTime(0, 0))
+        plug.processBlock([[1,2,3,4]], vh.RealTime(0, 0))
         assert False
     except StandardError:
         pass
@@ -36,24 +36,24 @@ def test_process_without_initialise():
 def test_process_input_format():
     plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
     plug.initialise(2, 4, 4) # channels, stepsize, blocksize
-    result = plug.process([[1,2,3,4],[5,6,7,8]], vh.RealTime(0, 0))
-    result = plug.process([np.array([1,2,3,4]),np.array([5,6,7,8])], vh.RealTime(0, 0))
-    result = plug.process(np.array([[1,2,3,4],[5,6,7,8]]), vh.RealTime(0, 0))
+    result = plug.processBlock([[1,2,3,4],[5,6,7,8]], vh.RealTime(0, 0))
+    result = plug.processBlock([np.array([1,2,3,4]),np.array([5,6,7,8])], vh.RealTime(0, 0))
+    result = plug.processBlock(np.array([[1,2,3,4],[5,6,7,8]]), vh.RealTime(0, 0))
     try:
         # Wrong number of channels
-        result = plug.process(np.array([[1,2,3,4]]), vh.RealTime(0, 0))
+        result = plug.processBlock(np.array([[1,2,3,4]]), vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
     try:
         # Wrong number of samples per channel
-        result = plug.process(np.array([[1,2,3],[4,5,6]]), vh.RealTime(0, 0))
+        result = plug.processBlock(np.array([[1,2,3],[4,5,6]]), vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
     try:
         # Differing numbers of samples per channel
-        result = plug.process(np.array([[1,2,3,4],[5,6,7]]), vh.RealTime(0, 0))
+        result = plug.processBlock(np.array([[1,2,3,4],[5,6,7]]), vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
@@ -63,13 +63,13 @@ def test_process_output_1ch():
     plug.initialise(1, 2, 2)
     try:
         # Too many channels
-        result = plug.process([[3,4],[5,6]], vh.RealTime(0, 0))
+        result = plug.processBlock([[3,4],[5,6]], vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
-    result = plug.process([[3,3]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,3]], vh.RealTime(0, 0))
     assert result[8] == [ { "label" : "", "values" : np.array([5.0]) } ]
-    result = plug.process([[3,0]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,0]], vh.RealTime(0, 0))
     assert result[8] == [ { "label" : "", "values" : np.array([4.0]) } ]
 
 def test_process_output_2ch():
@@ -77,19 +77,19 @@ def test_process_output_2ch():
     plug.initialise(2, 2, 2)
     try:
         # Too few channels
-        result = plug.process([[3,4]], vh.RealTime(0, 0))
+        result = plug.processBlock([[3,4]], vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
     try:
         # Too many channels
-        result = plug.process([[3,4],[5,6],[7,8]], vh.RealTime(0, 0))
+        result = plug.processBlock([[3,4],[5,6],[7,8]], vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
-    result = plug.process([[3,3],[4,4]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,3],[4,4]], vh.RealTime(0, 0))
     assert (result[8][0]["values"] == np.array([5.0,6.0])).all()
-    result = plug.process([[3,0],[4,0]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,0],[4,0]], vh.RealTime(0, 0))
     assert (result[8][0]["values"] == np.array([4.0,5.0])).all()
 
 def test_process_output_3ch():
@@ -97,19 +97,19 @@ def test_process_output_3ch():
     plug.initialise(3, 2, 2)
     try:
         # Too few channels
-        result = plug.process([[3,4],[5,6]], vh.RealTime(0, 0))
+        result = plug.processBlock([[3,4],[5,6]], vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
     try:
         # Too many channels
-        result = plug.process([[3,4],[5,6],[7,8],[9,10]], vh.RealTime(0, 0))
+        result = plug.processBlock([[3,4],[5,6],[7,8],[9,10]], vh.RealTime(0, 0))
         assert False
     except TypeError:
         pass
-    result = plug.process([[3,3],[4,4],[5,5]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,3],[4,4],[5,5]], vh.RealTime(0, 0))
     assert (result[8][0]["values"] == np.array([5.0,6.0,7.0])).all()
-    result = plug.process([[3,0],[4,0],[5,0]], vh.RealTime(0, 0))
+    result = plug.processBlock([[3,0],[4,0],[5,0]], vh.RealTime(0, 0))
     assert (result[8][0]["values"] == np.array([4.0,5.0,6.0])).all()
 
 
