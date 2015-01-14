@@ -283,6 +283,8 @@ initvampyhost(void)
                Plugin::FrequencyDomain) < 0 ||
         setint(dict, "AdaptNone",
                0) < 0 ||
+        setint(dict, "AdaptInputDomain",
+               PluginLoader::ADAPT_INPUT_DOMAIN) < 0 ||
         setint(dict, "AdaptChannelCount",
                PluginLoader::ADAPT_CHANNEL_COUNT) < 0 ||
         setint(dict, "AdaptBufferSize",
