@@ -39,7 +39,7 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
         assert o in outIndices
 
     if outputs == []:
-        outputs = [plugOuts[o]["identifier"]]
+        outputs = [plugOuts[0]["identifier"]]
 
     singleOutput = (len(outputs) == 1)
 
