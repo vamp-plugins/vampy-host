@@ -14,6 +14,7 @@ OBJECTS		:= $(OBJECTS:.c=.o)
 
 $(LIBRARY):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
+		$(NOSE)
 
 clean:		
 		rm -f $(OBJECTS)

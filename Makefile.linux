@@ -10,6 +10,8 @@ CXXFLAGS 		:= $(CFLAGS)
 LDFLAGS 		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic \
 			   -Wl,-z,defs -lpython2.7 -ldl
 
+NOSE			:= /usr/bin/nosetests2
+
 LIBRARY_EXT := .so
 
 include Makefile.inc
