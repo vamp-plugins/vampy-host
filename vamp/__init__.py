@@ -38,6 +38,11 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     for o in outputs:
         assert o in outIndices
 
+    if outputs == []:
+        outputs = [plugOuts[o]["identifier"]]
+
+    singleOutput = (len(outputs) == 1)
+
     stepSize = plug.getPreferredStepSize()
     blockSize = plug.getPreferredBlockSize()
     if blockSize == 0:
@@ -55,15 +60,24 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     for f in ff:
         results = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
         # results is a dict mapping output number -> list of feature dicts
-        if outputs == []:
-            if 0 in results:
-                for r in results[0]:
-                    yield r
-        else:
-            for o in outputs:
-                if outIndices[o] in results:
-                    for r in results[outIndices[o]]:
+        for o in outputs:
+            if outIndices[o] in results:
+                for r in results[outIndices[o]]:
+                    if singleOutput:
+                        yield r
+                    else:
                         yield { o: r }
         fi = fi + stepSize
 
-    ##!!! now getRemainingFeatures
+    results = plug.getRemainingFeatures()
+    for o in outputs:
+        if outIndices[o] in results:
+            for r in results[outIndices[o]]:
+                if singleOutput:
+                    yield r
+                else:
+                    yield { o: r }
+
+    plug.unload()
+
+
