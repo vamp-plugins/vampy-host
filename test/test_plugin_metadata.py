@@ -3,6 +3,8 @@ import vampyhost as vh
 
 testPluginKey = "vamp-test-plugin:vamp-test-plugin"
 
+testPluginKeyFreq = "vamp-test-plugin:vamp-test-plugin-freq"
+
 rate = 44100
 
 expectedVersion = 3
@@ -14,6 +16,9 @@ def test_plugin_exists():
     if plug.info["pluginVersion"] != expectedVersion:
         print("Test plugin version " + str(plug.info["pluginVersion"]) + " does not match expected version " + str(expectedVersion))
     assert plug.info["pluginVersion"] == expectedVersion
+
+def test_plugin_exists_in_freq_version():
+    assert testPluginKeyFreq in vh.listPlugins()
 
 def test_getoutputlist():
     outputs = vh.getOutputsOf(testPluginKey)
