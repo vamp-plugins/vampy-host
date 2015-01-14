@@ -205,9 +205,26 @@ loadPlugin(PyObject *self, PyObject *args)
     return PyPluginObject_From_Plugin(plugin);
 }
 
+static PyObject *
+frame2RealTime(PyObject *self, PyObject *args)
+{
+    int frame;
+    int rate;
+
+    if (!PyArg_ParseTuple(args, "nn",
+                          &frame,
+                          &rate)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "frame2RealTime() takes frame (int) and sample rate (int) arguments");
+        return 0; }
+
+    RealTime rt = RealTime::frame2RealTime(frame, rate);
+    return PyRealTime_FromRealTime(rt);
+}
+    
 // module methods table
 static PyMethodDef vampyhost_methods[] = {
-
+    
     {"listPlugins", enumeratePlugins, METH_NOARGS,
      "listPlugins() -> Return a list of the plugin keys of all installed Vamp plugins." },
 
@@ -225,6 +242,9 @@ static PyMethodDef vampyhost_methods[] = {
 
     {"loadPlugin", loadPlugin, METH_VARARGS,
      "loadPlugin(pluginKey, samplerate) -> Load the plugin that has the given key, if installed, and return the plugin object."},
+
+    {"frame2RealTime", frame2RealTime, METH_VARARGS,
+     "frame2RealTime() -> Convert sample frame number and sample rate to a RealTime object." },
 
     {0, 0}              /* sentinel */
 };
