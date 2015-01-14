@@ -8,6 +8,6 @@ rate = 44100
 
 def test_process():
     buf = np.zeros(10240)
-    results = vamp.process(buf, rate, testPluginKey, {}, ["instants","curve-fsr"])
+    results = vamp.process(buf, rate, testPluginKey)
     print("results = " + str(list(results)))
     return True

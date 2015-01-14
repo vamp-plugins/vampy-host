@@ -24,8 +24,8 @@ def framesFromArray(arr, stepSize, frameSize):
         yield frame
         i = i + stepSize
 
-def process(data, samplerate, key, parameters, outputs):
-
+def process(data, samplerate, key, parameters = {}, outputs = []):
+#!!! docstring
     plug = vampyhost.loadPlugin(key, samplerate,
                                 vampyhost.AdaptInputDomain +
                                 vampyhost.AdaptChannelCount)
