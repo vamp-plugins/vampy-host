@@ -24,11 +24,27 @@ def framesFromArray(arr, stepSize, frameSize):
         yield frame
         i = i + stepSize
 
+def selectOutputs(result, outputs):
+    return result ##!!! for now
+
 def process(data, samplerate, key, parameters, outputs):
     plug = vampyhost.loadPlugin(key, samplerate,
                                 vampyhost.AdaptInputDomain +
                                 vampyhost.AdaptChannelCount)
     stepSize = plug.getPreferredStepSize()
     blockSize = plug.getPreferredBlockSize()
+    if blockSize == 0:
+        blockSize = 1024
+    if stepSize == 0:
+        stepSize = blockSize ##!!! or blockSize/2, but check this with input domain adapter
+    channels = 1
+    if data.ndim > 1:
+        channels = data.shape[0]
+    plug.initialise(channels, stepSize, blockSize)
     ff = framesFromArray(data, stepSize, blockSize)
-    return True
+    fi = 0
+    for f in ff:
+        result = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
+        yield selectOutputs(result, outputs)
+        fi = fi + stepSize
+
