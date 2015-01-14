@@ -175,7 +175,6 @@ getOutputs(PyObject *self, PyObject *args)
 { 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
-
     Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
     PyObject *outputs = PyList_New(ol.size());
     

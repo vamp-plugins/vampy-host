@@ -24,13 +24,20 @@ def framesFromArray(arr, stepSize, frameSize):
         yield frame
         i = i + stepSize
 
-def selectOutputs(result, outputs):
-    return result ##!!! for now
-
 def process(data, samplerate, key, parameters, outputs):
+
     plug = vampyhost.loadPlugin(key, samplerate,
                                 vampyhost.AdaptInputDomain +
                                 vampyhost.AdaptChannelCount)
+
+    plugOuts = plug.getOutputs()
+
+    outIndices = dict(zip([o["identifier"] for o in plugOuts],
+                          range(0, len(plugOuts))))  # id -> n
+
+    for o in outputs:
+        assert o in outIndices
+
     stepSize = plug.getPreferredStepSize()
     blockSize = plug.getPreferredBlockSize()
     if blockSize == 0:
@@ -40,11 +47,23 @@ def process(data, samplerate, key, parameters, outputs):
     channels = 1
     if data.ndim > 1:
         channels = data.shape[0]
+
     plug.initialise(channels, stepSize, blockSize)
     ff = framesFromArray(data, stepSize, blockSize)
     fi = 0
+
     for f in ff:
-        result = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
-        yield selectOutputs(result, outputs)
+        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
+        # results is a dict mapping output number -> list of feature dicts
+        if outputs == []:
+            if 0 in results:
+                for r in results[0]:
+                    yield r
+        else:
+            for o in outputs:
+                if outIndices[o] in results:
+                    for r in results[outIndices[o]]:
+                        yield { o: r }
         fi = fi + stepSize
 
+    ##!!! now getRemainingFeatures
