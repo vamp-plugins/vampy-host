@@ -43,13 +43,12 @@ def test_process_summary():
     buf = input_data(blocksize * 10)
     results = list(vamp.process(buf, rate, testPluginKey, {}, [ "input-summary" ]))
     assert len(results) == 10
-    # the input-summary output contains, for each process block, the value of
-    # the first sample in the process block input plus the number of samples
-    # above some epsilon
     for i in range(len(results)):
+        #
         # each feature has a single value, equal to the number of non-zero elts
         # in the input block (which is all of them, i.e. the blocksize) plus
         # the first elt (which is i * blockSize + 1)
+        #
         expected = blocksize + i * blocksize + 1
         actual = results[i]["values"][0]
         assert actual == expected
@@ -92,3 +91,25 @@ def test_process_freq_summary():
         eps = 1e-6
         assert abs(actual - expected) < eps
 
+def test_process_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process(buf, rate, testPluginKey, {}, [ "input-timestamp" ]))
+    assert len(results) == 10
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the first frame in the
+        # input buffer
+        expected = i * blocksize
+        actual = results[i]["values"][0]
+        assert actual == expected
+
+def test_process_freq_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process(buf, rate, testPluginKeyFreq, {}, [ "input-timestamp" ]))
+    assert len(results) == 20
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the frame just beyond
+        # half-way through the input buffer
+        expected = i * (blocksize/2) + blocksize/2
+        actual = results[i]["values"][0]
+        print("actual = " + str(actual) + ", expected = " + str(expected))
+        assert actual == expected
