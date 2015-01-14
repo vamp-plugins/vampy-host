@@ -25,7 +25,9 @@ def framesFromArray(arr, stepSize, frameSize):
         i = i + stepSize
 
 def process(data, samplerate, key, parameters, outputs):
-    plug = vampyhost.loadPlugin(key, samplerate, vampyhost.AdaptNone) ##!!! input domain
+    plug = vampyhost.loadPlugin(key, samplerate,
+                                vampyhost.AdaptInputDomain +
+                                vampyhost.AdaptChannelCount)
     stepSize = plug.getPreferredStepSize()
     blockSize = plug.getPreferredBlockSize()
     ff = framesFromArray(data, stepSize, blockSize)
