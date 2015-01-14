@@ -71,9 +71,12 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     ff = framesFromArray(data, stepSize, blockSize)
     fi = 0
 
+    #!!! should we fill in the correct timestamps here?
+
     for f in ff:
         results = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
         # results is a dict mapping output number -> list of feature dicts
+        print("results = " + str(results))
         for o in outputs:
             if outIndices[o] in results:
                 for r in results[outIndices[o]]:
@@ -87,5 +90,31 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
                 yield { o: r }
 
     plug.unload()
+
+
+def collect(data, samplerate, key, parameters = {}, output = ""):
+    
+    plug, stepSize, blockSize = loadAndConfigureFor(data, samplerate, key, parameters)
+
+    plugOuts = plug.getOutputs()
+    if plugOuts == []:
+        return
+
+    outNo = -1
+    for n, o in zip(range(0, len(plugOuts)), plugOuts):
+        if output == "" or o["identifier"] == output:
+            outNo = n
+            break
+
+    assert outNo >= 0 #!!! todo proper error reporting
+
+    ff = framesFromArray(data, stepSize, blockSize)
+    fi = 0
+
+    #!!! todo!
+
+    plug.unload()
+    
+    return {}
 
 

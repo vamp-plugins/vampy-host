@@ -111,5 +111,4 @@ def test_process_freq_timestamps():
         # half-way through the input buffer
         expected = i * (blocksize/2) + blocksize/2
         actual = results[i]["input-timestamp"]["values"][0]
-        print("actual = " + str(actual) + ", expected = " + str(expected))
         assert actual == expected
