@@ -510,7 +510,7 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
 }
 
 static PyObject *
-process(PyObject *self, PyObject *args)
+processBlock(PyObject *self, PyObject *args)
 {
     PyObject *pyBuffer;
     PyObject *pyRealTime;
@@ -519,7 +519,7 @@ process(PyObject *self, PyObject *args)
                           &pyBuffer,                    // Audio data
                           &pyRealTime)) {               // TimeStamp
         PyErr_SetString(PyExc_TypeError,
-                        "process() takes buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
+                        "processBlock() takes buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
         return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
@@ -660,13 +660,13 @@ static PyMethodDef PyPluginObject_methods[] =
      "getMaxChannelCount() -> Return the maximum number of channels of audio data the plugin accepts as input."},
     
     {"initialise", initialise, METH_VARARGS,
-     "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before process() can be used."},
+     "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before processBlock() can be used."},
 
     {"reset", reset, METH_NOARGS,
      "reset() -> Reset the plugin after processing, to prepare for another processing run with the same parameters."},
 
-    {"process", process, METH_VARARGS,
-     "process(block, timestamp) -> Provide one processing frame to the plugin, with its timestamp, and obtain any features that were extracted immediately from this frame."},
+    {"processBlock", processBlock, METH_VARARGS,
+     "processBlock(block, timestamp) -> Provide one processing frame to the plugin, with its timestamp, and obtain any features that were extracted immediately from this frame."},
 
     {"getRemainingFeatures", getRemainingFeatures, METH_NOARGS,
      "getRemainingFeatures() -> Obtain any features extracted at the end of processing."},

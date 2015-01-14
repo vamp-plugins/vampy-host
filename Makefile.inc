@@ -4,8 +4,10 @@ LIBRARY		?= vampyhost$(LIBRARY_EXT)
 CXX		?= g++
 CC		?= gcc
 
-HEADERS		:= PyPluginObject.h PyRealTime.h FloatConversion.h VectorConversion.h
-SOURCES		:= PyPluginObject.cpp PyRealTime.cpp VectorConversion.cpp vampyhost.cpp
+SRC_DIR		:= native
+
+HEADERS		:= $(SRC_DIR)/PyPluginObject.h $(SRC_DIR)/PyRealTime.h $(SRC_DIR)/FloatConversion.h $(SRC_DIR)/VectorConversion.h
+SOURCES		:= $(SRC_DIR)/PyPluginObject.cpp $(SRC_DIR)/PyRealTime.cpp $(SRC_DIR)/VectorConversion.cpp $(SRC_DIR)/vampyhost.cpp
 
 OBJECTS		:= $(SOURCES:.cpp=.o)
 OBJECTS		:= $(OBJECTS:.c=.o)
@@ -24,6 +26,9 @@ depend:
 
 # DO NOT DELETE
 
-PyRealTime.o: PyRealTime.h
-vampyhost.o: PyRealTime.h VectorConversion.h
-VectorConversion.o: VectorConversion.h
+native/PyPluginObject.o: native/PyPluginObject.h native/FloatConversion.h
+native/PyPluginObject.o: native/VectorConversion.h native/PyRealTime.h
+native/PyRealTime.o: native/PyRealTime.h
+native/VectorConversion.o: native/FloatConversion.h native/VectorConversion.h
+native/vampyhost.o: native/PyRealTime.h native/PyPluginObject.h
+native/vampyhost.o: native/VectorConversion.h
