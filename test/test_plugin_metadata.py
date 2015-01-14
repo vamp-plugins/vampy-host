@@ -5,9 +5,19 @@ testPluginKey = "vamp-test-plugin:vamp-test-plugin"
 
 rate = 44100
 
+expectedVersion = 3
+
+def test_plugin_exists():
+    assert testPluginKey in vh.listPlugins()
+    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    assert "pluginVersion" in plug.info
+    if plug.info["pluginVersion"] != expectedVersion:
+        print("Test plugin version " + str(plug.info["pluginVersion"]) + " does not match expected version " + str(expectedVersion))
+    assert plug.info["pluginVersion"] == expectedVersion
+
 def test_getoutputlist():
     outputs = vh.getOutputsOf(testPluginKey)
-    assert len(outputs) == 9
+    assert len(outputs) == 10
     assert "input-summary" in outputs
 
 def test_inputdomain():

@@ -8,13 +8,19 @@ SRC_DIR		:= native
 
 HEADERS		:= $(SRC_DIR)/PyPluginObject.h $(SRC_DIR)/PyRealTime.h $(SRC_DIR)/FloatConversion.h $(SRC_DIR)/VectorConversion.h
 SOURCES		:= $(SRC_DIR)/PyPluginObject.cpp $(SRC_DIR)/PyRealTime.cpp $(SRC_DIR)/VectorConversion.cpp $(SRC_DIR)/vampyhost.cpp
+TESTS		:= $(wildcard test/test_*.py)
 
 OBJECTS		:= $(SOURCES:.cpp=.o)
 OBJECTS		:= $(OBJECTS:.c=.o)
 
+all:		$(LIBRARY) .tests
+
 $(LIBRARY):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
+
+.tests:		$(LIBRARY) $(TESTS)
 		$(NOSE)
+		@touch $@
 
 clean:		
 		rm -f $(OBJECTS)
