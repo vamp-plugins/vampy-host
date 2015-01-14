@@ -50,7 +50,7 @@ def test_process_summary():
         # the first elt (which is i * blockSize + 1)
         #
         expected = blocksize + i * blocksize + 1
-        actual = results[i]["values"][0]
+        actual = results[i]["input-summary"]["values"][0]
         assert actual == expected
 
 def test_process_freq_summary():
@@ -87,7 +87,7 @@ def test_process_freq_summary():
         if (i == len(results)-1):
             expected = 0
         expected = expected + blocksize - 1              # non-zero elts
-        actual = results[i]["values"][0]
+        actual = results[i]["input-summary"]["values"][0]
         eps = 1e-6
         assert abs(actual - expected) < eps
 
@@ -99,7 +99,7 @@ def test_process_timestamps():
         # The timestamp should be the frame number of the first frame in the
         # input buffer
         expected = i * blocksize
-        actual = results[i]["values"][0]
+        actual = results[i]["input-timestamp"]["values"][0]
         assert actual == expected
 
 def test_process_freq_timestamps():
@@ -110,6 +110,6 @@ def test_process_freq_timestamps():
         # The timestamp should be the frame number of the frame just beyond
         # half-way through the input buffer
         expected = i * (blocksize/2) + blocksize/2
-        actual = results[i]["values"][0]
+        actual = results[i]["input-timestamp"]["values"][0]
         print("actual = " + str(actual) + ", expected = " + str(expected))
         assert actual == expected

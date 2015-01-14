@@ -68,8 +68,6 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     if outputs == []:
         outputs = [plugOuts[0]["identifier"]]
 
-    singleOutput = (len(outputs) == 1)
-
     ff = framesFromArray(data, stepSize, blockSize)
     fi = 0
 
@@ -79,20 +77,14 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
         for o in outputs:
             if outIndices[o] in results:
                 for r in results[outIndices[o]]:
-                    if singleOutput:
-                        yield r
-                    else:
-                        yield { o: r }
+                    yield { o: r }
         fi = fi + stepSize
 
     results = plug.getRemainingFeatures()
     for o in outputs:
         if outIndices[o] in results:
             for r in results[outIndices[o]]:
-                if singleOutput:
-                    yield r
-                else:
-                    yield { o: r }
+                yield { o: r }
 
     plug.unload()
 
