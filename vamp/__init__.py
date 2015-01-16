@@ -92,6 +92,15 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     plug.unload()
 
 
+##!!!
+##
+## We could also devise a generator for the timestamps that need
+## filling: provide the output type & rate and get back a timestamp
+## generator
+##
+##!!!
+
+
 def collect(data, samplerate, key, parameters = {}, output = ""):
     
     plug, stepSize, blockSize = loadAndConfigureFor(data, samplerate, key, parameters)
