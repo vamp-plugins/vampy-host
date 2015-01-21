@@ -3,6 +3,8 @@
 import vampyhost
 import load
 import process
+import frames
+
 
 def timestamp_features(sample_rate, step_size, output_desc, features):
     n = -1
@@ -26,20 +28,29 @@ def timestamp_features(sample_rate, step_size, output_desc, features):
             yield f
 
 
-def collect(data, sample_rate, key, output, parameters = {}):
+def process_and_fill_timestamps(data, sample_rate, key, output, parameters = {}):
 
-    plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
     if output == "":
-        out = plug.get_output(0)
+        output_desc = plugin.get_output(0)
+        output = output_desc["identifier"]
     else:
-        out = plug.get_output(output)
+        output_desc = plugin.get_output(output)
 
-    plug.unload()
+    ff = frames.frames_from_array(data, step_size, block_size)
+
+    results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
+
+    selected = [ r[output] for r in results ]
+
+    stamped = timestamp_features(sample_rate, step_size, output_desc, selected)
+
+    for s in stamped:
+        yield s
+
+    plugin.unload()
         
-    results = process.process(data, sample_rate, key, output, parameters)
-        
-    return timestamp_features(sample_rate, step_size, out, results)
 
-
-
+def collect(data, sample_rate, key, output, parameters = {}):
+    return process_and_fill_timestamps(data, sample_rate, key, output, parameters)
