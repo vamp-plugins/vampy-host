@@ -4,12 +4,6 @@ import vampyhost
 import load
 import frames
 
-def select_features_for_output(output, features):
-    for ff in features:
-        if output in ff:
-            for f in ff[output]:
-                yield f
-
 ##!!!
 ##
 ## We could also devise a generator for the timestamps that need
@@ -18,21 +12,29 @@ def select_features_for_output(output, features):
 ##
 ##!!!
 
-# def timestampFeatures(sample_rate, step_size, outputDescriptor, features):
+def timestamp_features(sample_rate, step_size, output_desc, features):
+    n = -1
+    if output_desc["sample_type"] == vampyhost.ONE_SAMPLE_PER_STEP:
+        for f in features:
+            n = n + 1
+            t = vampyhost.frame_to_realtime(n * step_size, sample_rate)
+            f["timestamp"] = t
+            yield f
+    elif output_desc["sample_type"] == vampyhost.FIXED_SAMPLE_RATE:
+        output_rate = output_desc["sample_rate"]
+        for f in features:
+            if "has_timestamp" in f:
+                n = int(f["timestamp"].to_float() * output_rate + 0.5)
+            else:
+                n = n + 1
+            f["timestamp"] = vampyhost.RealTime('seconds', float(n) / output_rate)
+            yield f
+    else:
+        for f in features:
+            yield f
 
-#     n = 0
-    
-#     if outputDict.sampleType == vampyhost.ONE_SAMPLE_PER_STEP:
-#         for True:
-#             yield vampyhost.frame_to_realtime(n * step_size, sample_rate)
-#             n = n + 1
 
-#     elif outputDict.sampleType == vampyhost.FIXED_SAMPLE_RATE:
-#         for True:
-            
-
-
-def collect(data, sample_rate, key, parameters = {}, output = ""):
+def collect(data, sample_rate, key, output, parameters = {}):
     
     plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
