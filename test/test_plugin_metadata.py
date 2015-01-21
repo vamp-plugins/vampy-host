@@ -25,6 +25,47 @@ def test_getoutputlist():
     assert len(outputs) == 10
     assert "input-summary" in outputs
 
+def test_getoutputlist_2():
+    plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
+    outputs = plug.get_outputs()
+    assert len(outputs) == 10
+
+def test_get_output_by_id():
+    plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
+    out = plug.get_output("input-summary")
+    assert "sample_type" in out
+    try:
+        out = plug.get_output("chops")
+        assert False
+    except StandardError:
+        pass
+    try:
+        out = plug.get_output("")
+        assert False
+    except StandardError:
+        pass
+
+def test_get_output_by_index():
+    plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
+    out = plug.get_output(0)
+    assert "sample_type" in out
+    assert out["identifier"] == "instants"
+    try:
+        out = plug.get_output(20)
+        assert False
+    except StandardError:
+        pass
+    try:
+        out = plug.get_output(-1)
+        assert False
+    except StandardError:
+        pass
+    try:
+        out = plug.get_output(plug)
+        assert False
+    except StandardError:
+        pass
+    
 def test_inputdomain():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     assert plug.input_domain == vh.TIME_DOMAIN

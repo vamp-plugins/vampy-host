@@ -171,6 +171,85 @@ PyPluginObject_dealloc(PyPluginObject *self)
 }
 
 static PyObject *
+convertOutput(const Plugin::OutputDescriptor &desc)
+{
+    PyObject *outdict = PyDict_New();
+    PyDict_SetItemString
+        (outdict, "identifier", pystr(desc.identifier));
+    PyDict_SetItemString
+        (outdict, "name", pystr(desc.name));
+    PyDict_SetItemString
+        (outdict, "description", pystr(desc.description));
+    PyDict_SetItemString
+        (outdict, "bin_count", PyInt_FromLong(desc.binCount));
+    if (desc.binCount > 0) {
+        if (desc.hasKnownExtents) {
+            PyDict_SetItemString
+                (outdict, "has_known_extents", Py_True);
+            PyDict_SetItemString
+                (outdict, "min_value", PyFloat_FromDouble(desc.minValue));
+            PyDict_SetItemString
+                (outdict, "max_value", PyFloat_FromDouble(desc.maxValue));
+        } else {
+            PyDict_SetItemString
+                (outdict, "has_known_extents", Py_False);
+        }
+        if (desc.isQuantized) {
+            PyDict_SetItemString
+                (outdict, "is_quantized", Py_True);
+            PyDict_SetItemString
+                (outdict, "quantize_step", PyFloat_FromDouble(desc.quantizeStep));
+        } else {
+            PyDict_SetItemString
+                (outdict, "is_quantized", Py_False);
+        }
+    }
+    PyDict_SetItemString
+        (outdict, "sample_type", PyInt_FromLong((int)desc.sampleType));
+    PyDict_SetItemString
+        (outdict, "sample_rate", PyFloat_FromDouble(desc.sampleRate));
+    PyDict_SetItemString
+        (outdict, "has_duration", desc.hasDuration ? Py_True : Py_False);
+    return outdict;
+}
+
+static PyObject *
+get_output(PyObject *self, PyObject *args)
+{
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    int n = -1;
+    PyObject *pyId = 0;
+    
+    if (!PyArg_ParseTuple(args, "n", &n) &&
+        !PyArg_ParseTuple(args, "S", &pyId)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "get_output takes either output id (string) or output index (int) argument");
+        return 0;
+    }
+
+    Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
+
+    if (pyId) {
+        string id = PyString_AS_STRING(pyId);
+        for (int i = 0; i < int(ol.size()); ++i) {
+            if (ol[i].identifier == id) {
+                return convertOutput(ol[i]);
+            }
+        }
+    } else {
+        if (n >= 0 && n < int(ol.size())) {
+            return convertOutput(ol[n]);
+        }
+    }
+
+    PyErr_SetString(PyExc_StandardError,
+                    "unknown output id or output index out of range");
+    return 0;
+}
+
+static PyObject *
 get_outputs(PyObject *self, PyObject *args)
 { 
     PyPluginObject *pd = getPluginObject(self);
@@ -179,44 +258,7 @@ get_outputs(PyObject *self, PyObject *args)
     PyObject *outputs = PyList_New(ol.size());
     
     for (int i = 0; i < (int)ol.size(); ++i) {
-        PyObject *outdict = PyDict_New();
-        PyDict_SetItemString
-            (outdict, "identifier", pystr(ol[i].identifier));
-        PyDict_SetItemString
-            (outdict, "name", pystr(ol[i].name));
-        PyDict_SetItemString
-            (outdict, "description", pystr(ol[i].description));
-        PyDict_SetItemString
-            (outdict, "bin_count", PyInt_FromLong(ol[i].binCount));
-        if (ol[i].binCount > 0) {
-            if (ol[i].hasKnownExtents) {
-                PyDict_SetItemString
-                    (outdict, "has_known_extents", Py_True);
-                PyDict_SetItemString
-                    (outdict, "min_value", PyFloat_FromDouble(ol[i].minValue));
-                PyDict_SetItemString
-                    (outdict, "max_value", PyFloat_FromDouble(ol[i].maxValue));
-            } else {
-                PyDict_SetItemString
-                    (outdict, "has_known_extents", Py_False);
-            }
-            if (ol[i].isQuantized) {
-                PyDict_SetItemString
-                    (outdict, "is_quantized", Py_True);
-                PyDict_SetItemString
-                    (outdict, "quantize_step", PyFloat_FromDouble(ol[i].quantizeStep));
-            } else {
-                PyDict_SetItemString
-                    (outdict, "is_quantized", Py_False);
-            }
-        }
-        PyDict_SetItemString
-            (outdict, "sample_type", PyInt_FromLong((int)ol[i].sampleType));
-        PyDict_SetItemString
-            (outdict, "sample_rate", PyFloat_FromDouble(ol[i].sampleRate));
-        PyDict_SetItemString
-            (outdict, "has_duration", ol[i].hasDuration ? Py_True : Py_False);
-        
+        PyObject *outdict = convertOutput(ol[i]);
         PyList_SET_ITEM(outputs, i, outdict);
     }
 
@@ -633,6 +675,9 @@ static PyMethodDef PyPluginObject_methods[] =
 {
     {"get_outputs", get_outputs, METH_NOARGS,
      "get_outputs() -> Obtain the output descriptors for all of the plugin's outputs."},
+
+    {"get_output", get_output, METH_VARARGS,
+     "get_output(out) -> Obtain the output descriptor for a single output, by either id (string) or index (int)."},
 
     {"get_parameter_value", get_parameter_value, METH_VARARGS,
      "get_parameter_value(identifier) -> Return the value of the parameter with the given identifier."},

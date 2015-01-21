@@ -21,5 +21,5 @@ def input_data(n):
 
 def test_collect_runs_at_all():
     buf = input_data(blocksize)
-    results = vamp.collect(buf, rate, plugin_key, {}, "input-summary")
+    results = vamp.collect(buf, rate, plugin_key, "input-summary")
     assert type(results) == dict
