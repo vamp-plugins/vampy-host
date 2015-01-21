@@ -18,13 +18,13 @@ def select_features_for_output(output, features):
 ##
 ##!!!
 
-# def timestampFeatures(sampleRate, stepSize, outputDescriptor, features):
+# def timestampFeatures(sample_rate, step_size, outputDescriptor, features):
 
 #     n = 0
     
 #     if outputDict.sampleType == vampyhost.ONE_SAMPLE_PER_STEP:
 #         for True:
-#             yield vampyhost.frame_to_realtime(n * stepSize, sampleRate)
+#             yield vampyhost.frame_to_realtime(n * step_size, sample_rate)
 #             n = n + 1
 
 #     elif outputDict.sampleType == vampyhost.FIXED_SAMPLE_RATE:
@@ -32,23 +32,23 @@ def select_features_for_output(output, features):
             
 
 
-def collect(data, sampleRate, key, parameters = {}, output = ""):
+def collect(data, sample_rate, key, parameters = {}, output = ""):
     
-    plug, stepSize, blockSize = load.load_and_configure(data, sampleRate, key, parameters)
+    plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
-    plugOuts = plug.get_outputs()
-    if plugOuts == []:
+    plug_outs = plug.get_outputs()
+    if plug_outs == []:
         return
 
     outNo = -1
-    for n, o in zip(range(0, len(plugOuts)), plugOuts):
+    for n, o in zip(range(0, len(plug_outs)), plug_outs):
         if output == "" or o["identifier"] == output:
             outNo = n
             break
 
     assert outNo >= 0 #!!! todo proper error reporting
 
-    ff = frames.frames_from_array(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, step_size, block_size)
     fi = 0
 
     #!!! todo!

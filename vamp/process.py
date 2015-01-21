@@ -4,65 +4,65 @@ import vampyhost
 import frames
 import load
 
-def load_and_query(data, sampleRate, key, parameters):
-    plug, stepSize, blockSize = load.load_and_configure(data, sampleRate, key, parameters)
-    plugOuts = plug.get_outputs()
-    outIndices = dict(zip([o["identifier"] for o in plugOuts],
-                          range(0, len(plugOuts))))  # id -> n
-    return plug, stepSize, blockSize, outIndices
+def load_and_query(data, sample_rate, key, parameters):
+    plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+    plug_outs = plug.get_outputs()
+    out_indices = dict(zip([o["identifier"] for o in plug_outs],
+                          range(0, len(plug_outs))))  # id -> n
+    return plug, step_size, block_size, out_indices
     
 
-def process_multiple_outputs(data, sampleRate, key, outputs, parameters = {}):
+def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
 #!!! docstring
 
-    plug, stepSize, blockSize, outIndices = load_and_query(data, sampleRate, key, parameters)
+    plug, step_size, block_size, out_indices = load_and_query(data, sample_rate, key, parameters)
 
     for o in outputs:
-        assert o in outIndices
+        assert o in out_indices
 
-    ff = frames.frames_from_array(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, step_size, block_size)
     fi = 0
 
     for f in ff:
-        results = plug.process_block(f, vampyhost.frame_to_realtime(fi, sampleRate))
+        results = plug.process_block(f, vampyhost.frame_to_realtime(fi, sample_rate))
         # results is a dict mapping output number -> list of feature dicts
         for o in outputs:
-            outix = outIndices[o]
+            outix = out_indices[o]
             if outix in results:
                 for r in results[outix]:
                     yield { o: r }
-        fi = fi + stepSize
+        fi = fi + step_size
 
     results = plug.get_remaining_features()
     for o in outputs:
-        outix = outIndices[o]
+        outix = out_indices[o]
         if outix in results:
             for r in results[outix]:
                 yield { o: r }
 
     plug.unload()
 
-def process(data, sampleRate, key, output = "", parameters = {}):
+def process(data, sample_rate, key, output = "", parameters = {}):
 #!!! docstring
 
-    plug, stepSize, blockSize, outIndices = load_and_query(data, sampleRate, key, parameters)
+    plug, step_size, block_size, out_indices = load_and_query(data, sample_rate, key, parameters)
 
     if output == "":
         outix = 0
     else:
-        assert output in outIndices
-        outix = outIndices[output]
+        assert output in out_indices
+        outix = out_indices[output]
     
-    ff = frames.frames_from_array(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, step_size, block_size)
     fi = 0
 
     for f in ff:
-        results = plug.process_block(f, vampyhost.frame_to_realtime(fi, sampleRate))
+        results = plug.process_block(f, vampyhost.frame_to_realtime(fi, sample_rate))
         # results is a dict mapping output number -> list of feature dicts
         if outix in results:
             for r in results[outix]:
                 yield r
-        fi = fi + stepSize
+        fi = fi + step_size
 
     results = plug.get_remaining_features()
     if outix in results:

@@ -5,26 +5,26 @@ import vampyhost
 def list_plugins():
     return vampyhost.list_plugins()
 
-def load_and_configure(data, sampleRate, key, parameters):
+def load_and_configure(data, sample_rate, key, parameters):
 
-    plug = vampyhost.load_plugin(key, sampleRate,
+    plug = vampyhost.load_plugin(key, sample_rate,
                                  vampyhost.ADAPT_INPUT_DOMAIN +
                                  vampyhost.ADAPT_CHANNEL_COUNT)
 
     plug.set_parameter_values(parameters)
 
-    stepSize = plug.get_preferred_step_size()
-    blockSize = plug.get_preferred_block_size()
+    step_size = plug.get_preferred_step_size()
+    block_size = plug.get_preferred_block_size()
 
-    if blockSize == 0:
-        blockSize = 1024
-    if stepSize == 0:
-        stepSize = blockSize ##!!! or blockSize/2, but check this with input domain adapter
+    if block_size == 0:
+        block_size = 1024
+    if step_size == 0:
+        step_size = block_size ##!!! or block_size/2, but check this with input domain adapter
 
     channels = 1
     if data.ndim > 1:
         channels = data.shape[0]
 
-    plug.initialise(channels, stepSize, blockSize)
-    return (plug, stepSize, blockSize)
+    plug.initialise(channels, step_size, block_size)
+    return (plug, step_size, block_size)
 
