@@ -27,7 +27,7 @@ def test_getoutputlist():
 
 def test_inputdomain():
     plug = vh.load_plugin(testPluginKey, rate, vh.ADAPT_NONE)
-    assert plug.inputDomain == vh.TIME_DOMAIN
+    assert plug.input_domain == vh.TIME_DOMAIN
 
 def test_info():
     plug = vh.load_plugin(testPluginKey, rate, vh.ADAPT_NONE)
