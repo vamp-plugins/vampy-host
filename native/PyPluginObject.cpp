@@ -171,7 +171,7 @@ PyPluginObject_dealloc(PyPluginObject *self)
 }
 
 static PyObject *
-convertOutput(const Plugin::OutputDescriptor &desc)
+convertOutput(const Plugin::OutputDescriptor &desc, int ix)
 {
     PyObject *outdict = PyDict_New();
     PyDict_SetItemString
@@ -210,6 +210,8 @@ convertOutput(const Plugin::OutputDescriptor &desc)
         (outdict, "sample_rate", PyFloat_FromDouble(desc.sampleRate));
     PyDict_SetItemString
         (outdict, "has_duration", desc.hasDuration ? Py_True : Py_False);
+    PyDict_SetItemString
+        (outdict, "output_index", PyInt_FromLong(ix));
     return outdict;
 }
 
@@ -229,18 +231,20 @@ get_output(PyObject *self, PyObject *args)
         return 0;
     }
 
+    PyErr_Clear();
+    
     Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
 
     if (pyId) {
         string id = PyString_AS_STRING(pyId);
         for (int i = 0; i < int(ol.size()); ++i) {
             if (ol[i].identifier == id) {
-                return convertOutput(ol[i]);
+                return convertOutput(ol[i], i);
             }
         }
     } else {
         if (n >= 0 && n < int(ol.size())) {
-            return convertOutput(ol[n]);
+            return convertOutput(ol[n], n);
         }
     }
 
@@ -258,7 +262,7 @@ get_outputs(PyObject *self, PyObject *args)
     PyObject *outputs = PyList_New(ol.size());
     
     for (int i = 0; i < (int)ol.size(); ++i) {
-        PyObject *outdict = convertOutput(ol[i]);
+        PyObject *outdict = convertOutput(ol[i], i);
         PyList_SET_ITEM(outputs, i, outdict);
     }
 

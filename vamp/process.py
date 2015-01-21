@@ -7,8 +7,7 @@ import load
 def load_and_query(data, sample_rate, key, parameters):
     plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
     plug_outs = plug.get_outputs()
-    out_indices = dict(zip([o["identifier"] for o in plug_outs],
-                          range(0, len(plug_outs))))  # id -> n
+    out_indices = dict([(o["identifier"], o["output_index"]) for o in plug_outs])
     return plug, step_size, block_size, out_indices
     
 
@@ -45,13 +44,14 @@ def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
 def process(data, sample_rate, key, output = "", parameters = {}):
 #!!! docstring
 
-    plug, step_size, block_size, out_indices = load_and_query(data, sample_rate, key, parameters)
+    plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
     if output == "":
-        outix = 0
+        out = plug.get_output(0)
     else:
-        assert output in out_indices
-        outix = out_indices[output]
+        out = plug.get_output(output)
+
+    outix = out["output_index"]
     
     ff = frames.frames_from_array(data, step_size, block_size)
     fi = 0

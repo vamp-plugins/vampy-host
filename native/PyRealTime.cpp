@@ -68,7 +68,7 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
         return NULL; 
     }
 
-    // PyErr_Clear();
+    PyErr_Clear();
 
     // RealTimeObject *self = PyObject_New(RealTimeObject, &RealTime_Type); 
     RealTimeObject *self = (RealTimeObject*)type->tp_alloc(type, 0);
