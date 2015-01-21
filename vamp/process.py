@@ -4,43 +4,70 @@ import vampyhost
 import frames
 import load
 
-def process(data, sampleRate, key, parameters = {}, outputs = []):
-#!!! docstring
-
+def loadAndQuery(data, sampleRate, key, parameters):
     plug, stepSize, blockSize = load.loadAndConfigureFor(data, sampleRate, key, parameters)
-
     plugOuts = plug.getOutputs()
-    if plugOuts == []:
-        return
-
     outIndices = dict(zip([o["identifier"] for o in plugOuts],
                           range(0, len(plugOuts))))  # id -> n
+    return plug, stepSize, blockSize, outIndices
+    
+
+def processMultipleOutputs(data, sampleRate, key, outputs, parameters = {}):
+#!!! docstring
+
+    plug, stepSize, blockSize, outIndices = loadAndQuery(data, sampleRate, key, parameters)
 
     for o in outputs:
         assert o in outIndices
 
-    if outputs == []:
-        outputs = [plugOuts[0]["identifier"]]
-
     ff = frames.framesFromArray(data, stepSize, blockSize)
     fi = 0
-
-    #!!! should we fill in the correct timestamps here?
 
     for f in ff:
         results = plug.processBlock(f, vampyhost.frame2RealTime(fi, sampleRate))
         # results is a dict mapping output number -> list of feature dicts
         for o in outputs:
-            if outIndices[o] in results:
-                for r in results[outIndices[o]]:
+            outix = outIndices[o]
+            if outix in results:
+                for r in results[outix]:
                     yield { o: r }
         fi = fi + stepSize
 
     results = plug.getRemainingFeatures()
     for o in outputs:
-        if outIndices[o] in results:
-            for r in results[outIndices[o]]:
+        outix = outIndices[o]
+        if outix in results:
+            for r in results[outix]:
                 yield { o: r }
+
+    plug.unload()
+
+def process(data, sampleRate, key, output = "", parameters = {}):
+#!!! docstring
+
+    plug, stepSize, blockSize, outIndices = loadAndQuery(data, sampleRate, key, parameters)
+
+    if output == "":
+        outix = 0
+    else:
+        assert output in outIndices
+        outix = outIndices[output]
+    
+    ff = frames.framesFromArray(data, stepSize, blockSize)
+    fi = 0
+
+    for f in ff:
+        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, sampleRate))
+        # results is a dict mapping output number -> list of feature dicts
+        if outix in results:
+            for r in results[outix]:
+                yield r
+        fi = fi + stepSize
+
+    results = plug.getRemainingFeatures()
+    if outix in results:
+        for r in results[outix]:
+            yield r
 
     plug.unload()
 
