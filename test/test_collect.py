@@ -20,6 +20,14 @@ def input_data(n):
     return np.arange(n) + 1    
 
 def test_collect_runs_at_all():
-    buf = input_data(blocksize)
-    results = vamp.collect(buf, rate, plugin_key, "input-summary")
-    assert type(results) == dict
+    buf = input_data(blocksize * 10)
+    results = list(vamp.collect(buf, rate, plugin_key, "input-timestamp"))
+    assert results != []
+
+def test_collect_one_sample_per_step():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.collect(buf, rate, plugin_key, "input-timestamp"))
+    assert len(results) == 10
+    for r in results:
+        assert r["timestamp"] == vamp.vampyhost.frame_to_realtime(r["values"][0], rate)
+

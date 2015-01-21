@@ -2,15 +2,7 @@
 
 import vampyhost
 import load
-import frames
-
-##!!!
-##
-## We could also devise a generator for the timestamps that need
-## filling: provide the output type & rate and get back a timestamp
-## generator
-##
-##!!!
+import process
 
 def timestamp_features(sample_rate, step_size, output_desc, features):
     n = -1
@@ -35,28 +27,19 @@ def timestamp_features(sample_rate, step_size, output_desc, features):
 
 
 def collect(data, sample_rate, key, output, parameters = {}):
-    
+
     plug, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
-    plug_outs = plug.get_outputs()
-    if plug_outs == []:
-        return
-
-    outNo = -1
-    for n, o in zip(range(0, len(plug_outs)), plug_outs):
-        if output == "" or o["identifier"] == output:
-            outNo = n
-            break
-
-    assert outNo >= 0 #!!! todo proper error reporting
-
-    ff = frames.frames_from_array(data, step_size, block_size)
-    fi = 0
-
-    #!!! todo!
+    if output == "":
+        out = plug.get_output(0)
+    else:
+        out = plug.get_output(output)
 
     plug.unload()
-    
-    return {}
+        
+    results = process.process(data, sample_rate, key, output, parameters)
+        
+    return timestamp_features(sample_rate, step_size, out, results)
+
 
 
