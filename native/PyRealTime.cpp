@@ -185,7 +185,6 @@ static PyMethodDef RealTime_methods[] =
 static int
 RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 {
-
     if ( !string(name).compare("sec")) { 
         self->rt->sec= (int) PyInt_AS_LONG(value);
         return 0;
@@ -202,7 +201,6 @@ RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 static PyObject *
 RealTime_getattr(RealTimeObject *self, char *name)
 {
-
     if ( !string(name).compare("sec") ) { 
         return PyInt_FromSsize_t(
             (Py_ssize_t) self->rt->sec); 
@@ -215,6 +213,22 @@ RealTime_getattr(RealTimeObject *self, char *name)
 
     return Py_FindMethod(RealTime_methods, 
                          (PyObject *)self, name);
+}
+
+static int
+RealTime_compare(PyObject *self, PyObject *other)
+{
+    if (!PyRealTime_Check(self) || !PyRealTime_Check(other)) {
+        PyErr_SetString(PyExc_TypeError, "RealTime Object Expected.");
+        return -1;
+    }
+
+    RealTime *rt1 = PyRealTime_AS_REALTIME(self);
+    RealTime *rt2 = PyRealTime_AS_REALTIME(other);
+
+    if (*rt1 == *rt2) return 0;
+    else if (*rt1 > *rt2) return 1;
+    else return -1;
 }
 
 /* String representation called by e.g. str(realtime), print realtime*/
@@ -298,7 +312,7 @@ PyTypeObject RealTime_Type =
     0,                                  /*tp_print*/
     (getattrfunc)RealTime_getattr, /*tp_getattr*/
     (setattrfunc)RealTime_setattr, /*tp_setattr*/
-    0,                             /*tp_compare*/
+    (cmpfunc)RealTime_compare,     /*tp_compare*/
     RealTime_repr,                 /*tp_repr*/
     &realtime_as_number,        /*tp_as_number*/
     0,                          /*tp_as_sequence*/
