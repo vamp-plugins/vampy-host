@@ -94,9 +94,9 @@ PyPluginObject_From_Plugin(Plugin *plugin)
 
     PyObject *infodict = PyDict_New();
     PyDict_SetItemString
-        (infodict, "apiVersion", PyInt_FromLong(plugin->getVampApiVersion()));
+        (infodict, "api_version", PyInt_FromLong(plugin->getVampApiVersion()));
     PyDict_SetItemString
-        (infodict, "pluginVersion", PyInt_FromLong(plugin->getPluginVersion()));
+        (infodict, "plugin_version", PyInt_FromLong(plugin->getPluginVersion()));
     PyDict_SetItemString
         (infodict, "identifier", pystr(plugin->getIdentifier()));
     PyDict_SetItemString
@@ -127,23 +127,23 @@ PyPluginObject_From_Plugin(Plugin *plugin)
         PyDict_SetItemString
             (paramdict, "unit", pystr(pl[i].unit));
         PyDict_SetItemString
-            (paramdict, "minValue", PyFloat_FromDouble(pl[i].minValue));
+            (paramdict, "min_value", PyFloat_FromDouble(pl[i].minValue));
         PyDict_SetItemString
-            (paramdict, "maxValue", PyFloat_FromDouble(pl[i].maxValue));
+            (paramdict, "max_value", PyFloat_FromDouble(pl[i].maxValue));
         PyDict_SetItemString
-            (paramdict, "defaultValue", PyFloat_FromDouble(pl[i].defaultValue));
+            (paramdict, "default_value", PyFloat_FromDouble(pl[i].defaultValue));
         if (pl[i].isQuantized) {
             PyDict_SetItemString
-                (paramdict, "isQuantized", Py_True);
+                (paramdict, "is_quantized", Py_True);
             PyDict_SetItemString
-                (paramdict, "quantizeStep", PyFloat_FromDouble(pl[i].quantizeStep));
+                (paramdict, "quantize_step", PyFloat_FromDouble(pl[i].quantizeStep));
             if (!pl[i].valueNames.empty()) {
                 PyDict_SetItemString
-                    (paramdict, "valueNames", conv.PyValue_From_StringVector(pl[i].valueNames));
+                    (paramdict, "value_names", conv.PyValue_From_StringVector(pl[i].valueNames));
             }
         } else {
             PyDict_SetItemString
-                (paramdict, "isQuantized", Py_False);
+                (paramdict, "is_quantized", Py_False);
         }
         
         PyList_SET_ITEM(params, i, paramdict);
@@ -187,35 +187,35 @@ get_outputs(PyObject *self, PyObject *args)
         PyDict_SetItemString
             (outdict, "description", pystr(ol[i].description));
         PyDict_SetItemString
-            (outdict, "binCount", PyInt_FromLong(ol[i].binCount));
+            (outdict, "bin_count", PyInt_FromLong(ol[i].binCount));
         if (ol[i].binCount > 0) {
             if (ol[i].hasKnownExtents) {
                 PyDict_SetItemString
-                    (outdict, "hasKnownExtents", Py_True);
+                    (outdict, "has_known_extents", Py_True);
                 PyDict_SetItemString
-                    (outdict, "minValue", PyFloat_FromDouble(ol[i].minValue));
+                    (outdict, "min_value", PyFloat_FromDouble(ol[i].minValue));
                 PyDict_SetItemString
-                    (outdict, "maxValue", PyFloat_FromDouble(ol[i].maxValue));
+                    (outdict, "max_value", PyFloat_FromDouble(ol[i].maxValue));
             } else {
                 PyDict_SetItemString
-                    (outdict, "hasKnownExtents", Py_False);
+                    (outdict, "has_known_extents", Py_False);
             }
             if (ol[i].isQuantized) {
                 PyDict_SetItemString
-                    (outdict, "isQuantized", Py_True);
+                    (outdict, "is_quantized", Py_True);
                 PyDict_SetItemString
-                    (outdict, "quantizeStep", PyFloat_FromDouble(ol[i].quantizeStep));
+                    (outdict, "quantize_step", PyFloat_FromDouble(ol[i].quantizeStep));
             } else {
                 PyDict_SetItemString
-                    (outdict, "isQuantized", Py_False);
+                    (outdict, "is_quantized", Py_False);
             }
         }
         PyDict_SetItemString
-            (outdict, "sampleType", PyInt_FromLong((int)ol[i].sampleType));
+            (outdict, "sample_type", PyInt_FromLong((int)ol[i].sampleType));
         PyDict_SetItemString
-            (outdict, "sampleRate", PyFloat_FromDouble(ol[i].sampleRate));
+            (outdict, "sample_rate", PyFloat_FromDouble(ol[i].sampleRate));
         PyDict_SetItemString
-            (outdict, "hasDuration", ol[i].hasDuration ? Py_True : Py_False);
+            (outdict, "has_duration", ol[i].hasDuration ? Py_True : Py_False);
         
         PyList_SET_ITEM(outputs, i, outdict);
     }
