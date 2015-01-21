@@ -64,7 +64,7 @@ using namespace Vamp;
 using namespace Vamp::HostExt;
 
 static PyObject *
-enumeratePlugins(PyObject *self, PyObject *)
+list_plugins(PyObject *self, PyObject *)
 {
     PluginLoader *loader = PluginLoader::getInstance();
     vector<PluginLoader::PluginKey> plugins = loader->listPlugins();
@@ -73,7 +73,7 @@ enumeratePlugins(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getPluginPath(PyObject *self, PyObject *)
+get_plugin_path(PyObject *self, PyObject *)
 {
     vector<string> path = PluginHostAdapter::getPluginPath();
     VectorConversion conv;
@@ -97,13 +97,13 @@ static string toPluginKey(PyObject *pyPluginKey)
 }
 
 static PyObject *
-getLibraryFor(PyObject *self, PyObject *args)
+get_library_for(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
-                        "getLibraryPathForPlugin() takes plugin key (string) argument");
+                        "get_library_for() takes plugin key (string) argument");
         return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
@@ -116,13 +116,13 @@ getLibraryFor(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-getPluginCategory(PyObject *self, PyObject *args)
+get_category_of(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
-                        "getPluginCategory() takes plugin key (string) argument");
+                        "get_category_of() takes plugin key (string) argument");
         return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
@@ -137,13 +137,13 @@ getPluginCategory(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-getOutputList(PyObject *self, PyObject *args)
+get_outputs_of(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
     if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
-                        "getOutputList() takes plugin key (string) argument");
+                        "get_outputs_of() takes plugin key (string) argument");
         return 0; }
 
     Plugin::OutputList outputs;
@@ -174,7 +174,7 @@ getOutputList(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-loadPlugin(PyObject *self, PyObject *args)
+load_plugin(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
     float inputSampleRate;
@@ -185,7 +185,7 @@ loadPlugin(PyObject *self, PyObject *args)
                           &inputSampleRate,
                           &adapterFlags)) {
         PyErr_SetString(PyExc_TypeError,
-                        "loadPlugin() takes plugin key (string), sample rate (float), and adapter flags (int) arguments");
+                        "load_plugin() takes plugin key (string), sample rate (float), and adapter flags (int) arguments");
         return 0; }
 
     string pluginKey = toPluginKey(pyPluginKey);
@@ -206,7 +206,7 @@ loadPlugin(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-frame2RealTime(PyObject *self, PyObject *args)
+frame_to_realtime(PyObject *self, PyObject *args)
 {
     int frame;
     int rate;
@@ -215,7 +215,7 @@ frame2RealTime(PyObject *self, PyObject *args)
                           &frame,
                           &rate)) {
         PyErr_SetString(PyExc_TypeError,
-                        "frame2RealTime() takes frame (int) and sample rate (int) arguments");
+                        "frame_to_realtime() takes frame (int) and sample rate (int) arguments");
         return 0; }
 
     RealTime rt = RealTime::frame2RealTime(frame, rate);
@@ -225,26 +225,26 @@ frame2RealTime(PyObject *self, PyObject *args)
 // module methods table
 static PyMethodDef vampyhost_methods[] = {
     
-    {"listPlugins", enumeratePlugins, METH_NOARGS,
-     "listPlugins() -> Return a list of the plugin keys of all installed Vamp plugins." },
+    {"list_plugins", list_plugins, METH_NOARGS,
+     "list_plugins() -> Return a list of the plugin keys of all installed Vamp plugins." },
 
-    {"getPluginPath", getPluginPath, METH_NOARGS,
-     "getPluginPath() -> Return a list of directories which will be searched for Vamp plugins. This may be changed by setting the VAMP_PATH environment variable."},
+    {"get_plugin_path", get_plugin_path, METH_NOARGS,
+     "get_plugin_path() -> Return a list of directories which will be searched for Vamp plugins. This may be changed by setting the VAMP_PATH environment variable."},
 
-    {"getCategoryOf", getPluginCategory, METH_VARARGS,
-     "getCategoryOf(pluginKey) -> Return the category of a Vamp plugin given its key, if known. The category is expressed as a list of nested types from least to most specific."},
+    {"get_category_of", get_category_of, METH_VARARGS,
+     "get_category_of(pluginKey) -> Return the category of a Vamp plugin given its key, if known. The category is expressed as a list of nested types from least to most specific."},
 
-    {"getLibraryFor", getLibraryFor, METH_VARARGS,
-     "getLibraryFor(pluginKey) -> Return the file path of the Vamp plugin library in which the given plugin key is found, or an empty string if the plugin is not installed."},
+    {"get_library_for", get_library_for, METH_VARARGS,
+     "get_library_for(pluginKey) -> Return the file path of the Vamp plugin library in which the given plugin key is found, or an empty string if the plugin is not installed."},
 
-    {"getOutputsOf", getOutputList, METH_VARARGS,
-     "getOutputsOf(pluginKey) -> Return a list of the output identifiers of the plugin with the given key, if installed."},
+    {"get_outputs_of", get_outputs_of, METH_VARARGS,
+     "get_outputs_of(pluginKey) -> Return a list of the output identifiers of the plugin with the given key, if installed."},
 
-    {"loadPlugin", loadPlugin, METH_VARARGS,
-     "loadPlugin(pluginKey, samplerate) -> Load the plugin that has the given key, if installed, and return the plugin object."},
+    {"load_plugin", load_plugin, METH_VARARGS,
+     "load_plugin(pluginKey, samplerate) -> Load the plugin that has the given key, if installed, and return the plugin object."},
 
-    {"frame2RealTime", frame2RealTime, METH_VARARGS,
-     "frame2RealTime() -> Convert sample frame number and sample rate to a RealTime object." },
+    {"frame_to_realtime", frame_to_realtime, METH_VARARGS,
+     "frame_to_realtime() -> Convert sample frame number and sample rate to a RealTime object." },
 
     {0, 0}              /* sentinel */
 };

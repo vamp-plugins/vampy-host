@@ -24,7 +24,7 @@ def processMultipleOutputs(data, sampleRate, key, outputs, parameters = {}):
     fi = 0
 
     for f in ff:
-        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, sampleRate))
+        results = plug.processBlock(f, vampyhost.frame_to_realtime(fi, sampleRate))
         # results is a dict mapping output number -> list of feature dicts
         for o in outputs:
             outix = outIndices[o]
@@ -57,7 +57,7 @@ def process(data, sampleRate, key, output = "", parameters = {}):
     fi = 0
 
     for f in ff:
-        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, sampleRate))
+        results = plug.processBlock(f, vampyhost.frame_to_realtime(fi, sampleRate))
         # results is a dict mapping output number -> list of feature dicts
         if outix in results:
             for r in results[outix]:
