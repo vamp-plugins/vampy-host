@@ -36,7 +36,7 @@ def collect(data, sampleRate, key, parameters = {}, output = ""):
     
     plug, stepSize, blockSize = load.loadAndConfigureFor(data, sampleRate, key, parameters)
 
-    plugOuts = plug.getOutputs()
+    plugOuts = plug.get_outputs()
     if plugOuts == []:
         return
 

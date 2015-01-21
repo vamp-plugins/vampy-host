@@ -41,33 +41,33 @@ def test_setparameter():
     plug = vh.load_plugin(testPluginKey, rate, vh.ADAPT_NONE)
     assert plug.parameters[0]["identifier"] == "produce_output"
     assert plug.parameters[0]["defaultValue"] == 1
-    assert plug.getParameterValue("produce_output") == plug.parameters[0]["defaultValue"]
-    assert plug.setParameterValue("produce_output", 0) == True
-    assert plug.getParameterValue("produce_output") == 0
-    assert plug.setParameterValues({ "produce_output": 1 }) == True
-    assert plug.getParameterValue("produce_output") == 1
+    assert plug.get_parameter_value("produce_output") == plug.parameters[0]["defaultValue"]
+    assert plug.set_parameter_value("produce_output", 0) == True
+    assert plug.get_parameter_value("produce_output") == 0
+    assert plug.set_parameter_values({ "produce_output": 1 }) == True
+    assert plug.get_parameter_value("produce_output") == 1
     try:
-        plug.setParameterValue("produce_output", "fish")
+        plug.set_parameter_value("produce_output", "fish")
         assert False
     except TypeError:
         pass
     try:
-        plug.setParameterValue(4, 0)
+        plug.set_parameter_value(4, 0)
         assert False
     except TypeError:
         pass
     try:
-        plug.setParameterValue("steak", 0)
+        plug.set_parameter_value("steak", 0)
         assert False
     except StandardError:
         pass
     try:
-        plug.getParameterValue(4)
+        plug.get_parameter_value(4)
         assert False
     except TypeError:
         pass
     try:
-        plug.getParameterValue("steak")
+        plug.get_parameter_value("steak")
         assert False
     except StandardError:
         pass

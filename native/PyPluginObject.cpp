@@ -171,7 +171,7 @@ PyPluginObject_dealloc(PyPluginObject *self)
 }
 
 static PyObject *
-getOutputs(PyObject *self, PyObject *args)
+get_outputs(PyObject *self, PyObject *args)
 { 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -285,13 +285,13 @@ hasParameter(PyPluginObject *pd, string id)
 }
 
 static PyObject *
-getParameterValue(PyObject *self, PyObject *args)
+get_parameter_value(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
     if (!PyArg_ParseTuple(args, "S", &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
-                        "getParameterValue() takes parameter id (string) argument");
+                        "get_parameter_value() takes parameter id (string) argument");
         return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
@@ -310,14 +310,14 @@ getParameterValue(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-setParameterValue(PyObject *self, PyObject *args)
+set_parameter_value(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
     float value;
 
     if (!PyArg_ParseTuple(args, "Sf", &pyParam, &value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "setParameterValue() takes parameter id (string), and value (float) arguments");
+                        "set_parameter_value() takes parameter id (string), and value (float) arguments");
         return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
@@ -336,18 +336,18 @@ setParameterValue(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-setParameterValues(PyObject *self, PyObject *args)
+set_parameter_values(PyObject *self, PyObject *args)
 {
     PyObject *dict;
 
     if (!PyArg_ParseTuple(args, "O", &dict)) {
         PyErr_SetString(PyExc_TypeError,
-                        "setParameterValues() takes dict argument");
+                        "set_parameter_values() takes dict argument");
         return 0; }
 
     if (!PyDict_Check(dict)) {
         PyErr_SetString(PyExc_TypeError,
-                        "setParameterValues() takes dict argument");
+                        "set_parameter_values() takes dict argument");
         return 0; }
     
     PyPluginObject *pd = getPluginObject(self);
@@ -385,13 +385,13 @@ setParameterValues(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-selectProgram(PyObject *self, PyObject *args)
+select_program(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
     if (!PyArg_ParseTuple(args, "S", &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
-                        "selectProgram() takes parameter id (string) argument");
+                        "select_program() takes parameter id (string) argument");
         return 0; }
 
     PyPluginObject *pd = getPluginObject(self);
@@ -509,7 +509,7 @@ convertPluginInput(PyObject *pyBuffer, int channels, int blockSize)
 }
 
 static PyObject *
-processBlock(PyObject *self, PyObject *args)
+process_block(PyObject *self, PyObject *args)
 {
     PyObject *pyBuffer;
     PyObject *pyRealTime;
@@ -518,7 +518,7 @@ processBlock(PyObject *self, PyObject *args)
                           &pyBuffer,                    // Audio data
                           &pyRealTime)) {               // TimeStamp
         PyErr_SetString(PyExc_TypeError,
-                        "processBlock() takes buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
+                        "process_block() takes buffer (2D array or list of arrays, one row per channel) and timestamp (RealTime) arguments");
         return 0; }
 
     if (!PyRealTime_Check(pyRealTime)) {
@@ -551,7 +551,7 @@ processBlock(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-getRemainingFeatures(PyObject *self, PyObject *)
+get_remaining_features(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -568,7 +568,7 @@ getRemainingFeatures(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getPreferredBlockSize(PyObject *self, PyObject *)
+get_preferred_block_size(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -576,7 +576,7 @@ getPreferredBlockSize(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getPreferredStepSize(PyObject *self, PyObject *)
+get_preferred_step_size(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -584,7 +584,7 @@ getPreferredStepSize(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getMinChannelCount(PyObject *self, PyObject *)
+get_min_channel_count(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -592,7 +592,7 @@ getMinChannelCount(PyObject *self, PyObject *)
 }
 
 static PyObject *
-getMaxChannelCount(PyObject *self, PyObject *)
+get_max_channel_count(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -631,44 +631,44 @@ static PyMemberDef PyPluginObject_members[] =
 
 static PyMethodDef PyPluginObject_methods[] =
 {
-    {"getOutputs", getOutputs, METH_NOARGS,
-     "getOutputs() -> Obtain the output descriptors for all of the plugin's outputs."},
+    {"get_outputs", get_outputs, METH_NOARGS,
+     "get_outputs() -> Obtain the output descriptors for all of the plugin's outputs."},
 
-    {"getParameterValue", getParameterValue, METH_VARARGS,
-     "getParameterValue(identifier) -> Return the value of the parameter with the given identifier."},
+    {"get_parameter_value", get_parameter_value, METH_VARARGS,
+     "get_parameter_value(identifier) -> Return the value of the parameter with the given identifier."},
 
-    {"setParameterValue", setParameterValue, METH_VARARGS,
-     "setParameterValue(identifier, value) -> Set the parameter with the given identifier to the given value."},
+    {"set_parameter_value", set_parameter_value, METH_VARARGS,
+     "set_parameter_value(identifier, value) -> Set the parameter with the given identifier to the given value."},
 
-    {"setParameterValues", setParameterValues, METH_VARARGS,
-     "setParameterValues(dict) -> Set multiple parameters to values corresponding to the key/value pairs in the dict. Any parameters not mentioned in the dict are unchanged."},
+    {"set_parameter_values", set_parameter_values, METH_VARARGS,
+     "set_parameter_values(dict) -> Set multiple parameters to values corresponding to the key/value pairs in the dict. Any parameters not mentioned in the dict are unchanged."},
 
-    {"selectProgram", selectProgram, METH_VARARGS,
-     "selectProgram(name) -> Select the processing program with the given name."},
+    {"select_program", select_program, METH_VARARGS,
+     "select_program(name) -> Select the processing program with the given name."},
     
-    {"getPreferredBlockSize", getPreferredBlockSize, METH_VARARGS,
-     "getPreferredBlockSize() -> Return the plugin's preferred processing block size, or 0 if the plugin accepts any block size."},
+    {"get_preferred_block_size", get_preferred_block_size, METH_VARARGS,
+     "get_preferred_block_size() -> Return the plugin's preferred processing block size, or 0 if the plugin accepts any block size."},
 
-    {"getPreferredStepSize", getPreferredStepSize, METH_VARARGS,
-     "getPreferredStepSize() -> Return the plugin's preferred processing step size, or 0 if the plugin allows the host to select. If this is 0, the host should normally choose the same step as block size for time-domain plugins, or half the block size for frequency-domain plugins."},
+    {"get_preferred_step_size", get_preferred_step_size, METH_VARARGS,
+     "get_preferred_step_size() -> Return the plugin's preferred processing step size, or 0 if the plugin allows the host to select. If this is 0, the host should normally choose the same step as block size for time-domain plugins, or half the block size for frequency-domain plugins."},
 
-    {"getMinChannelCount", getMinChannelCount, METH_VARARGS,
-     "getMinChannelCount() -> Return the minimum number of channels of audio data the plugin accepts as input."},
+    {"get_min_channel_count", get_min_channel_count, METH_VARARGS,
+     "get_min_channel_count() -> Return the minimum number of channels of audio data the plugin accepts as input."},
 
-    {"getMaxChannelCount", getMaxChannelCount, METH_VARARGS,
-     "getMaxChannelCount() -> Return the maximum number of channels of audio data the plugin accepts as input."},
+    {"get_max_channel_count", get_max_channel_count, METH_VARARGS,
+     "get_max_channel_count() -> Return the maximum number of channels of audio data the plugin accepts as input."},
     
     {"initialise", initialise, METH_VARARGS,
-     "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before processBlock() can be used."},
+     "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before process_block() can be used."},
 
     {"reset", reset, METH_NOARGS,
      "reset() -> Reset the plugin after processing, to prepare for another processing run with the same parameters."},
 
-    {"processBlock", processBlock, METH_VARARGS,
-     "processBlock(block, timestamp) -> Provide one processing frame to the plugin, with its timestamp, and obtain any features that were extracted immediately from this frame."},
+    {"process_block", process_block, METH_VARARGS,
+     "process_block(block, timestamp) -> Provide one processing frame to the plugin, with its timestamp, and obtain any features that were extracted immediately from this frame."},
 
-    {"getRemainingFeatures", getRemainingFeatures, METH_NOARGS,
-     "getRemainingFeatures() -> Obtain any features extracted at the end of processing."},
+    {"get_remaining_features", get_remaining_features, METH_NOARGS,
+     "get_remaining_features() -> Obtain any features extracted at the end of processing."},
 
     {"unload", unload, METH_NOARGS,
      "unload() -> Dispose of the plugin. You cannot use the plugin object again after calling this. Note that unloading also happens automatically when the plugin object's reference count reaches zero; this function is only necessary if you wish to ensure the native part of the plugin is disposed of before then."},

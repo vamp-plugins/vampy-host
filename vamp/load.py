@@ -10,10 +10,10 @@ def loadAndConfigureFor(data, sampleRate, key, parameters):
                                 vampyhost.ADAPT_INPUT_DOMAIN +
                                 vampyhost.ADAPT_CHANNEL_COUNT)
 
-    plug.setParameterValues(parameters)
+    plug.set_parameter_values(parameters)
 
-    stepSize = plug.getPreferredStepSize()
-    blockSize = plug.getPreferredBlockSize()
+    stepSize = plug.get_preferred_step_size()
+    blockSize = plug.get_preferred_block_size()
 
     if blockSize == 0:
         blockSize = 1024
