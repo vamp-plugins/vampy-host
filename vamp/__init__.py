@@ -2,7 +2,7 @@
 
 import vampyhost
 
-from load import list_plugins, loadAndConfigureFor
-from frames import framesFromArray
-from process import process, processMultipleOutputs
+from load import list_plugins, load_and_configure
+from frames import frames_from_array
+from process import process, process_multiple_outputs
 from collect import collect

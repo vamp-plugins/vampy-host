@@ -164,14 +164,14 @@ static PyMethodDef RealTime_methods[] =
     {"values",  (PyCFunction)RealTime_values,   METH_NOARGS,
      PyDoc_STR("values() -> Tuple of sec,nsec representation.")},
 
-    {"toString",        (PyCFunction)RealTime_toString, METH_NOARGS,
-     PyDoc_STR("toString() -> Return a user-readable string to the nearest millisecond in a form like HH:MM:SS.mmm")},
+    {"to_string",        (PyCFunction)RealTime_toString, METH_NOARGS,
+     PyDoc_STR("to_string() -> Return a user-readable string to the nearest millisecond in a form like HH:MM:SS.mmm")},
 
-    {"toFrame", (PyCFunction)RealTime_toFrame,  METH_VARARGS,
-     PyDoc_STR("toFrame(samplerate) -> Sample count for given sample rate.")},
+    {"to_frame", (PyCFunction)RealTime_toFrame,  METH_VARARGS,
+     PyDoc_STR("to_frame(samplerate) -> Sample count for given sample rate.")},
 
-    {"toFloat", (PyCFunction)RealTime_float,    METH_NOARGS,
-     PyDoc_STR("toFloat() -> Floating point representation.")},
+    {"to_float", (PyCFunction)RealTime_float,    METH_NOARGS,
+     PyDoc_STR("to_float() -> Floating point representation.")},
         
     {NULL,              NULL}           /* sentinel */
 };

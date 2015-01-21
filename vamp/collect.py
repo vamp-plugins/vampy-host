@@ -4,7 +4,7 @@ import vampyhost
 import load
 import frames
 
-def selectFeaturesForOutput(output, features):
+def select_features_for_output(output, features):
     for ff in features:
         if output in ff:
             for f in ff[output]:
@@ -34,7 +34,7 @@ def selectFeaturesForOutput(output, features):
 
 def collect(data, sampleRate, key, parameters = {}, output = ""):
     
-    plug, stepSize, blockSize = load.loadAndConfigureFor(data, sampleRate, key, parameters)
+    plug, stepSize, blockSize = load.load_and_configure(data, sampleRate, key, parameters)
 
     plugOuts = plug.get_outputs()
     if plugOuts == []:
@@ -48,7 +48,7 @@ def collect(data, sampleRate, key, parameters = {}, output = ""):
 
     assert outNo >= 0 #!!! todo proper error reporting
 
-    ff = frames.framesFromArray(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, stepSize, blockSize)
     fi = 0
 
     #!!! todo!

@@ -2,8 +2,8 @@
 import vamp
 import numpy as np
 
-testPluginKey = "vamp-test-plugin:vamp-test-plugin"
-testPluginKeyFreq = "vamp-test-plugin:vamp-test-plugin-freq"
+plugin_key = "vamp-test-plugin:vamp-test-plugin"
+plugin_key_freq = "vamp-test-plugin:vamp-test-plugin-freq"
 
 rate = 44100
 
@@ -21,18 +21,18 @@ def input_data(n):
 
 def test_process_n():
     buf = input_data(blocksize)
-    results = list(vamp.process(buf, rate, testPluginKey, "input-summary"))
+    results = list(vamp.process(buf, rate, plugin_key, "input-summary"))
     assert len(results) == 1
 
 def test_process_freq_n():
     buf = input_data(blocksize)
-    results = list(vamp.process(buf, rate, testPluginKeyFreq, "input-summary", {}))
+    results = list(vamp.process(buf, rate, plugin_key_freq, "input-summary", {}))
     assert len(results) == 2 # one complete block starting at zero, one half-full
 
 def test_process_default_output():
     # If no output is specified, we should get the first one (instants)
     buf = input_data(blocksize)
-    results = list(vamp.process(buf, rate, testPluginKey, "", {}))
+    results = list(vamp.process(buf, rate, plugin_key, "", {}))
     assert len(results) == 10
     for i in range(len(results)):
         expectedTime = vamp.vampyhost.RealTime('seconds', i * 1.5)
@@ -41,27 +41,27 @@ def test_process_default_output():
 
 def test_process_summary_param():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKey, "input-summary", { "produce_output": 0 }))
+    results = list(vamp.process(buf, rate, plugin_key, "input-summary", { "produce_output": 0 }))
     assert len(results) == 0
 
 def test_process_multi_summary_param():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKey, [ "input-summary" ], { "produce_output": 0 }))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": 0 }))
     assert len(results) == 0
 
 def test_process_summary_param_bool():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKey, "input-summary", { "produce_output": False }))
+    results = list(vamp.process(buf, rate, plugin_key, "input-summary", { "produce_output": False }))
     assert len(results) == 0
 
 def test_process_multi_summary_param_bool():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKey, [ "input-summary" ], { "produce_output": False }))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": False }))
     assert len(results) == 0
 
 def test_process_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKey, "input-summary", {}))
+    results = list(vamp.process(buf, rate, plugin_key, "input-summary", {}))
     assert len(results) == 10
     for i in range(len(results)):
         #
@@ -75,7 +75,7 @@ def test_process_summary():
 
 def test_process_multi_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKey, [ "input-summary" ], {}))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], {}))
     assert len(results) == 10
     for i in range(len(results)):
         #
@@ -89,7 +89,7 @@ def test_process_multi_summary():
 
 def test_process_freq_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKeyFreq, "input-summary", {}))
+    results = list(vamp.process(buf, rate, plugin_key_freq, "input-summary", {}))
     assert len(results) == 20
     for i in range(len(results)):
         #
@@ -127,7 +127,7 @@ def test_process_freq_summary():
 
 def test_process_multi_freq_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKeyFreq, [ "input-summary" ], {}))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key_freq, [ "input-summary" ], {}))
     assert len(results) == 20
     for i in range(len(results)):
         expected = i * (blocksize/2) + blocksize/2 + 1   # "first" elt
@@ -140,7 +140,7 @@ def test_process_multi_freq_summary():
 
 def test_process_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKey, "input-timestamp", {}))
+    results = list(vamp.process(buf, rate, plugin_key, "input-timestamp", {}))
     assert len(results) == 10
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
@@ -151,7 +151,7 @@ def test_process_timestamps():
 
 def test_process_multi_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKey, [ "input-timestamp" ]))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-timestamp" ]))
     assert len(results) == 10
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
@@ -162,7 +162,7 @@ def test_process_multi_timestamps():
 
 def test_process_freq_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process(buf, rate, testPluginKeyFreq, "input-timestamp", {}))
+    results = list(vamp.process(buf, rate, plugin_key_freq, "input-timestamp", {}))
     assert len(results) == 20
     for i in range(len(results)):
         # The timestamp should be the frame number of the frame just beyond
@@ -173,7 +173,7 @@ def test_process_freq_timestamps():
 
 def test_process_multi_freq_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKeyFreq, [ "input-timestamp" ], {}))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key_freq, [ "input-timestamp" ], {}))
     assert len(results) == 20
     for i in range(len(results)):
         # The timestamp should be the frame number of the frame just beyond
@@ -184,7 +184,7 @@ def test_process_multi_freq_timestamps():
 
 def test_process_multiple_outputs():
     buf = input_data(blocksize * 10)
-    results = list(vamp.processMultipleOutputs(buf, rate, testPluginKey, [ "input-summary", "input-timestamp" ], {}))
+    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary", "input-timestamp" ], {}))
     assert len(results) == 20
     si = 0
     ti = 0

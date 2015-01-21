@@ -4,23 +4,23 @@ import vampyhost
 import frames
 import load
 
-def loadAndQuery(data, sampleRate, key, parameters):
-    plug, stepSize, blockSize = load.loadAndConfigureFor(data, sampleRate, key, parameters)
+def load_and_query(data, sampleRate, key, parameters):
+    plug, stepSize, blockSize = load.load_and_configure(data, sampleRate, key, parameters)
     plugOuts = plug.get_outputs()
     outIndices = dict(zip([o["identifier"] for o in plugOuts],
                           range(0, len(plugOuts))))  # id -> n
     return plug, stepSize, blockSize, outIndices
     
 
-def processMultipleOutputs(data, sampleRate, key, outputs, parameters = {}):
+def process_multiple_outputs(data, sampleRate, key, outputs, parameters = {}):
 #!!! docstring
 
-    plug, stepSize, blockSize, outIndices = loadAndQuery(data, sampleRate, key, parameters)
+    plug, stepSize, blockSize, outIndices = load_and_query(data, sampleRate, key, parameters)
 
     for o in outputs:
         assert o in outIndices
 
-    ff = frames.framesFromArray(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, stepSize, blockSize)
     fi = 0
 
     for f in ff:
@@ -45,7 +45,7 @@ def processMultipleOutputs(data, sampleRate, key, outputs, parameters = {}):
 def process(data, sampleRate, key, output = "", parameters = {}):
 #!!! docstring
 
-    plug, stepSize, blockSize, outIndices = loadAndQuery(data, sampleRate, key, parameters)
+    plug, stepSize, blockSize, outIndices = load_and_query(data, sampleRate, key, parameters)
 
     if output == "":
         outix = 0
@@ -53,7 +53,7 @@ def process(data, sampleRate, key, output = "", parameters = {}):
         assert output in outIndices
         outix = outIndices[output]
     
-    ff = frames.framesFromArray(data, stepSize, blockSize)
+    ff = frames.frames_from_array(data, stepSize, blockSize)
     fi = 0
 
     for f in ff:

@@ -109,7 +109,7 @@ PyPluginObject_From_Plugin(Plugin *plugin)
         (infodict, "copyright", pystr(plugin->getCopyright()));
     pd->info = infodict;
 
-    pd->input_domain = plugin->getInputDomain();
+    pd->inputDomain = plugin->getInputDomain();
 
     VectorConversion conv;
 
@@ -617,7 +617,7 @@ static PyMemberDef PyPluginObject_members[] =
     {(char *)"info", T_OBJECT, offsetof(PyPluginObject, info), READONLY,
      (char *)"info -> A read-only dictionary of plugin metadata."},
 
-    {(char *)"input_domain", T_INT, offsetof(PyPluginObject, input_domain), READONLY,
+    {(char *)"input_domain", T_INT, offsetof(PyPluginObject, inputDomain), READONLY,
      (char *)"input_domain -> The format of input audio required by the plugin, either vampyhost.TIME_DOMAIN or vampyhost.FREQUENCY_DOMAIN."},
 
     {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,

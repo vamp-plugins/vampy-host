@@ -2,7 +2,7 @@
 
 import numpy
 
-def framesFromArray(arr, stepSize, frameSize):
+def frames_from_array(arr, stepSize, frameSize):
     """Generate a list of frames of size frameSize, extracted from the input array arr at stepSize intervals"""
     # presumably such a function exists in many places, but I need practice
     assert(stepSize > 0)

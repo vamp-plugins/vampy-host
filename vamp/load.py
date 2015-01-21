@@ -5,10 +5,11 @@ import vampyhost
 def list_plugins():
     return vampyhost.list_plugins()
 
-def loadAndConfigureFor(data, sampleRate, key, parameters):
+def load_and_configure(data, sampleRate, key, parameters):
+
     plug = vampyhost.load_plugin(key, sampleRate,
-                                vampyhost.ADAPT_INPUT_DOMAIN +
-                                vampyhost.ADAPT_CHANNEL_COUNT)
+                                 vampyhost.ADAPT_INPUT_DOMAIN +
+                                 vampyhost.ADAPT_CHANNEL_COUNT)
 
     plug.set_parameter_values(parameters)
 

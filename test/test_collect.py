@@ -2,8 +2,8 @@
 import vamp
 import numpy as np
 
-testPluginKey = "vamp-test-plugin:vamp-test-plugin"
-testPluginKeyFreq = "vamp-test-plugin:vamp-test-plugin-freq"
+plugin_key = "vamp-test-plugin:vamp-test-plugin"
+plugin_key_freq = "vamp-test-plugin:vamp-test-plugin-freq"
 
 rate = 44100
 
@@ -21,5 +21,5 @@ def input_data(n):
 
 def test_collect_runs_at_all():
     buf = input_data(blocksize)
-    results = vamp.collect(buf, rate, testPluginKey, {}, "input-summary")
+    results = vamp.collect(buf, rate, plugin_key, {}, "input-summary")
     assert type(results) == dict
