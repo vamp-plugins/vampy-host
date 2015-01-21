@@ -22,12 +22,12 @@ def selectFeaturesForOutput(output, features):
 
 #     n = 0
     
-#     if outputDict.sampleType == vampyhost.OneSamplePerStep:
+#     if outputDict.sampleType == vampyhost.ONE_SAMPLE_PER_STEP:
 #         for True:
 #             yield vampyhost.frame2RealTime(n * stepSize, sampleRate)
 #             n = n + 1
 
-#     elif outputDict.sampleType == vampyhost.FixedSampleRate:
+#     elif outputDict.sampleType == vampyhost.FIXED_SAMPLE_RATE:
 #         for True:
             
 

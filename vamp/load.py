@@ -7,8 +7,8 @@ def listPlugins():
 
 def loadAndConfigureFor(data, sampleRate, key, parameters):
     plug = vampyhost.loadPlugin(key, sampleRate,
-                                vampyhost.AdaptInputDomain +
-                                vampyhost.AdaptChannelCount)
+                                vampyhost.ADAPT_INPUT_DOMAIN +
+                                vampyhost.ADAPT_CHANNEL_COUNT)
 
     plug.setParameterValues(parameters)
 

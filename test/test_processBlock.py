@@ -7,7 +7,7 @@ testPluginKey = "vamp-test-plugin:vamp-test-plugin"
 rate = 44100
 
 def test_load_unload():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     plug.unload()
     try:
         plug.unload() # should throw but not crash
@@ -16,7 +16,7 @@ def test_load_unload():
         pass
 
 def test_get_set_parameter():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     value = plug.getParameterValue("produce_output")
     assert(value == 1.0)
     plug.setParameterValue("produce_output", 0.0)
@@ -24,7 +24,7 @@ def test_get_set_parameter():
     assert(value == 0.0)
     
 def test_process_without_initialise():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     try:
         plug.processBlock([[1,2,3,4]], vh.RealTime(0, 0))
         assert False
@@ -32,7 +32,7 @@ def test_process_without_initialise():
         pass
 
 def test_process_input_format():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     plug.initialise(2, 4, 4) # channels, stepsize, blocksize
     result = plug.processBlock([[1,2,3,4],[5,6,7,8]], vh.RealTime(0, 0))
     result = plug.processBlock([np.array([1,2,3,4]),np.array([5,6,7,8])], vh.RealTime(0, 0))
@@ -57,7 +57,7 @@ def test_process_input_format():
         pass
 
 def test_process_output_1ch():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     plug.initialise(1, 2, 2)
     try:
         # Too many channels
@@ -71,7 +71,7 @@ def test_process_output_1ch():
     assert result[8] == [ { "label" : "", "values" : np.array([4.0]) } ]
 
 def test_process_output_2ch():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     plug.initialise(2, 2, 2)
     try:
         # Too few channels
@@ -91,7 +91,7 @@ def test_process_output_2ch():
     assert (result[8][0]["values"] == np.array([4.0,5.0])).all()
 
 def test_process_output_3ch():
-    plug = vh.loadPlugin(testPluginKey, rate, vh.AdaptNone)
+    plug = vh.loadPlugin(testPluginKey, rate, vh.ADAPT_NONE)
     plug.initialise(3, 2, 2)
     try:
         # Too few channels

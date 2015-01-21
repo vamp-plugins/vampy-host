@@ -291,27 +291,27 @@ initvampyhost(void)
         return;
     }
 
-    if (setint(dict, "OneSamplePerStep",
+    if (setint(dict, "ONE_SAMPLE_PER_STEP",
                Plugin::OutputDescriptor::OneSamplePerStep) < 0 ||
-        setint(dict, "FixedSampleRate",
+        setint(dict, "FIXED_SAMPLE_RATE",
                Plugin::OutputDescriptor::FixedSampleRate) < 0 ||
-        setint(dict, "VariableSampleRate",
+        setint(dict, "VARIABLE_SAMPLE_RATE",
                Plugin::OutputDescriptor::VariableSampleRate) < 0 ||
-        setint(dict, "TimeDomain",
+        setint(dict, "TIME_DOMAIN",
                Plugin::TimeDomain) < 0 ||
-        setint(dict, "FrequencyDomain",
+        setint(dict, "FREQUENCY_DOMAIN",
                Plugin::FrequencyDomain) < 0 ||
-        setint(dict, "AdaptNone",
+        setint(dict, "ADAPT_NONE",
                0) < 0 ||
-        setint(dict, "AdaptInputDomain",
+        setint(dict, "ADAPT_INPUT_DOMAIN",
                PluginLoader::ADAPT_INPUT_DOMAIN) < 0 ||
-        setint(dict, "AdaptChannelCount",
+        setint(dict, "ADAPT_CHANNEL_COUNT",
                PluginLoader::ADAPT_CHANNEL_COUNT) < 0 ||
-        setint(dict, "AdaptBufferSize",
+        setint(dict, "ADAPT_BUFFER_SIZE",
                PluginLoader::ADAPT_BUFFER_SIZE) < 0 ||
-        setint(dict, "AdaptAllSafe",
+        setint(dict, "ADAPT_ALL_SAFE",
                PluginLoader::ADAPT_ALL_SAFE) < 0 ||
-        setint(dict, "AdaptAll",
+        setint(dict, "ADAPT_ALL",
                PluginLoader::ADAPT_ALL) < 0) {
         cerr << "ERROR: initvampyhost: Failed to add enums to module dictionary" << endl;
         return;
