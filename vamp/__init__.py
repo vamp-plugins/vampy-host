@@ -27,8 +27,8 @@ def framesFromArray(arr, stepSize, frameSize):
         i = i + stepSize
 
 
-def loadAndConfigureFor(data, samplerate, key, parameters):
-    plug = vampyhost.loadPlugin(key, samplerate,
+def loadAndConfigureFor(data, sampleRate, key, parameters):
+    plug = vampyhost.loadPlugin(key, sampleRate,
                                 vampyhost.AdaptInputDomain +
                                 vampyhost.AdaptChannelCount)
 
@@ -50,10 +50,10 @@ def loadAndConfigureFor(data, samplerate, key, parameters):
     return (plug, stepSize, blockSize)
 
 
-def process(data, samplerate, key, parameters = {}, outputs = []):
+def process(data, sampleRate, key, parameters = {}, outputs = []):
 #!!! docstring
 
-    plug, stepSize, blockSize = loadAndConfigureFor(data, samplerate, key, parameters)
+    plug, stepSize, blockSize = loadAndConfigureFor(data, sampleRate, key, parameters)
 
     plugOuts = plug.getOutputs()
     if plugOuts == []:
@@ -74,9 +74,8 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     #!!! should we fill in the correct timestamps here?
 
     for f in ff:
-        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, samplerate))
+        results = plug.processBlock(f, vampyhost.frame2RealTime(fi, sampleRate))
         # results is a dict mapping output number -> list of feature dicts
-        print("results = " + str(results))
         for o in outputs:
             if outIndices[o] in results:
                 for r in results[outIndices[o]]:
@@ -92,6 +91,12 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
     plug.unload()
 
 
+def selectFeaturesForOutput(output, features):
+    for ff in features:
+        if output in ff:
+            for f in ff[output]:
+                yield f
+
 ##!!!
 ##
 ## We could also devise a generator for the timestamps that need
@@ -100,10 +105,23 @@ def process(data, samplerate, key, parameters = {}, outputs = []):
 ##
 ##!!!
 
+# def timestampFeatures(sampleRate, stepSize, outputDescriptor, features):
 
-def collect(data, samplerate, key, parameters = {}, output = ""):
+#     n = 0
     
-    plug, stepSize, blockSize = loadAndConfigureFor(data, samplerate, key, parameters)
+#     if outputDict.sampleType == vampyhost.OneSamplePerStep:
+#         for True:
+#             yield vampyhost.frame2RealTime(n * stepSize, sampleRate)
+#             n = n + 1
+
+#     elif outputDict.sampleType == vampyhost.FixedSampleRate:
+#         for True:
+            
+
+
+def collect(data, sampleRate, key, parameters = {}, output = ""):
+    
+    plug, stepSize, blockSize = loadAndConfigureFor(data, sampleRate, key, parameters)
 
     plugOuts = plug.getOutputs()
     if plugOuts == []:

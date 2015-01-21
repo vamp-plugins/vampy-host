@@ -29,6 +29,16 @@ def test_process_freq_n():
     results = list(vamp.process(buf, rate, testPluginKeyFreq, {}, [ "input-summary" ]))
     assert len(results) == 2 # one complete block starting at zero, one half-full
 
+def test_process_default_output():
+    # If no output is specified, we should get the first one (instants)
+    buf = input_data(blocksize)
+    results = list(vamp.process(buf, rate, testPluginKey, {}, []))
+    assert len(results) == 10
+    for i in range(len(results)):
+        expectedTime = vamp.vampyhost.RealTime('seconds', i * 1.5)
+        actualTime = results[i]["instants"]["timestamp"]
+        assert expectedTime == actualTime
+    
 def test_process_summary_param():
     buf = input_data(blocksize * 10)
     results = list(vamp.process(buf, rate, testPluginKey, { "produce_output": 0 }, [ "input-summary" ]))
@@ -112,3 +122,22 @@ def test_process_freq_timestamps():
         expected = i * (blocksize/2) + blocksize/2
         actual = results[i]["input-timestamp"]["values"][0]
         assert actual == expected
+
+def test_process_multiple_outputs():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process(buf, rate, testPluginKey, {}, [ "input-summary", "input-timestamp" ]))
+    assert len(results) == 20
+    si = 0
+    ti = 0
+    for r in results:
+        assert "input-summary" in r or "input-timestamp" in r
+        if "input-summary" in r:
+            expected = blocksize + si * blocksize + 1
+            actual = r["input-summary"]["values"][0]
+            assert actual == expected
+            si = si + 1
+        if "input-timestamp" in r:
+            expected = ti * blocksize
+            actual = r["input-timestamp"]["values"][0]
+            assert actual == expected
+            ti = ti + 1
