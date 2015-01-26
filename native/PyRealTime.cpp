@@ -64,7 +64,7 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
                 
         ) { 
         PyErr_SetString(PyExc_TypeError, 
-                        "RealTime initialised with wrong arguments.");
+                        "RealTime constructor requires either (sec,nsec) integer tuple, or ('format',float) where 'format' is 'seconds' or 'milliseconds'");
         return NULL; 
     }
 
