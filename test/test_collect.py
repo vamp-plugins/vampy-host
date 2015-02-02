@@ -25,6 +25,8 @@ def test_collect_runs_at_all():
     step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
     assert results != []
 
+##!!! add test for default output
+    
 def test_collect_one_sample_per_step():
     buf = input_data(blocksize * 10)
     step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
@@ -62,3 +64,13 @@ def test_collect_variable_sample_rate():
         assert r["timestamp"] == vamp.vampyhost.RealTime('seconds', i * 0.75)
         assert abs(r["values"][0] - i * 0.1) < eps
         i = i + 1
+
+def test_collect_grid_one_sample_per_step():
+    buf = input_data(blocksize * 10)
+    step, results = vamp.collect(buf, rate, plugin_key, "grid-oss")
+    assert abs(float(step) - (1024.0 / rate)) < eps
+    assert len(results) == 10
+    for i in range(len(results)):
+        expected = []
+        actual = results[i]
+        assert actual == expected

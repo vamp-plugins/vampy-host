@@ -69,19 +69,19 @@ def reshape(results, sample_rate, step_size, output_desc):
 
     if shape == "vector":
         rv = ( out_step,
-               np.array([r[output]["values"][0] for r in results]) )
+               np.array([r[output]["values"][0] for r in results], np.float32) )
     elif shape == "matrix":
         rv = ( out_step,
                np.array(
                    [[r[output]["values"][i] for r in results]
-                    for i in range(0, output_desc["bin_count"])]) )
+                    for i in range(0, output_desc["bin_count"])], np.float32) )
     else:
         rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 
     return rv
 
         
-def collect(data, sample_rate, key, output, parameters = {}):
+def collect(data, sample_rate, key, output = "", parameters = {}):
 
     plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
@@ -101,7 +101,7 @@ def collect(data, sample_rate, key, output, parameters = {}):
     return rv
 
         
-def collect_frames(ff, channels, sample_rate, step_size, key, output, parameters = {}):
+def collect_frames(ff, channels, sample_rate, step_size, key, output = "", parameters = {}):
 
     plug = vampyhost.load_plugin(key, sample_rate,
                                  vampyhost.ADAPT_INPUT_DOMAIN +
