@@ -7,6 +7,13 @@ import frames
 
 import numpy as np
 
+def get_feature_step_time(sample_rate, step_size, output_desc):
+    if output_desc["sample_type"] == vampyhost.ONE_SAMPLE_PER_STEP:
+        return vampyhost.frame_to_realtime(step_size, sample_rate)
+    elif output_desc["sample_type"] == vampyhost.FIXED_SAMPLE_RATE:
+        return vampyhost.RealTime('seconds', 1.0 / output_desc["sample_rate"])
+    else:
+        return 1
 
 def timestamp_features(sample_rate, step_size, output_desc, features):
     n = -1
@@ -29,7 +36,6 @@ def timestamp_features(sample_rate, step_size, output_desc, features):
         for f in features:
             yield f
 
-
 def fill_timestamps(results, sample_rate, step_size, output_desc):
 
     output = output_desc["identifier"]
@@ -41,7 +47,6 @@ def fill_timestamps(results, sample_rate, step_size, output_desc):
     for s in stamped:
         yield s
 
-
 def deduce_shape(output_desc):
     if output_desc["has_duration"]:
         return "individual"
@@ -51,10 +56,9 @@ def deduce_shape(output_desc):
         return "individual"
     if output_desc["bin_count"] == 0:
         return "individual"
-    if output_desc["bin_count"] > 1:
-        return "matrix"
-    return "vector"
-
+    if output_desc["bin_count"] == 1:
+        return "vector"
+    return "matrix"
 
 def process_and_reshape(data, sample_rate, key, output, parameters = {}):
 
@@ -71,13 +75,16 @@ def process_and_reshape(data, sample_rate, key, output, parameters = {}):
     results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
 
     shape = deduce_shape(output_desc)
+    out_step = get_feature_step_time(sample_rate, step_size, output_desc)
 
     if shape == "vector":
-        rv = np.array([r[output]["values"][0] for r in results])
+        rv = ( out_step,
+               np.array([r[output]["values"][0] for r in results]) )
     elif shape == "matrix":
-        rv = np.array(
-            [[r[output]["values"][i] for r in results]
-             for i in range(0, output_desc["bin_count"]-1)])
+        rv = ( out_step,
+               np.array(
+                   [[r[output]["values"][i] for r in results]
+                    for i in range(0, output_desc["bin_count"])]) )
     else:
         rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 

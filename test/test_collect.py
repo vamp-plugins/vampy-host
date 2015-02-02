@@ -22,12 +22,13 @@ def input_data(n):
 
 def test_collect_runs_at_all():
     buf = input_data(blocksize * 10)
-    results = list(vamp.collect(buf, rate, plugin_key, "input-timestamp"))
+    step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
     assert results != []
 
 def test_collect_one_sample_per_step():
     buf = input_data(blocksize * 10)
-    results = list(vamp.collect(buf, rate, plugin_key, "input-timestamp"))
+    step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
+    assert abs(float(step) - (1024.0 / rate)) < eps
     assert len(results) == 10
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
@@ -38,21 +39,23 @@ def test_collect_one_sample_per_step():
 
 def test_collect_fixed_sample_rate():
     buf = input_data(blocksize * 10)
-    results = list(vamp.collect(buf, rate, plugin_key, "curve-fsr"))
+    step, results = vamp.collect(buf, rate, plugin_key, "curve-fsr")
+    assert abs(float(step) - 0.4) < eps
     assert len(results) == 10
     for i in range(len(results)):
         assert abs(results[i] - i * 0.1) < eps
 
 def test_collect_fixed_sample_rate_2():
     buf = input_data(blocksize * 10)
-    results = list(vamp.collect(buf, rate, plugin_key, "curve-fsr-timed"))
+    step, results = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
+    assert abs(float(step) - 0.4) < eps
     assert len(results) == 10
     for i in range(len(results)):
         assert abs(results[i] - i * 0.1) < eps
         
 def test_collect_variable_sample_rate():
     buf = input_data(blocksize * 10)
-    results = list(vamp.collect(buf, rate, plugin_key, "curve-vsr"))
+    results = vamp.collect(buf, rate, plugin_key, "curve-vsr")
     assert len(results) == 10
     i = 0
     for r in results:
