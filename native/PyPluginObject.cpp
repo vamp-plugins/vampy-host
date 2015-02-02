@@ -173,6 +173,8 @@ PyPluginObject_dealloc(PyPluginObject *self)
 static PyObject *
 convertOutput(const Plugin::OutputDescriptor &desc, int ix)
 {
+    VectorConversion conv;
+    
     PyObject *outdict = PyDict_New();
     PyDict_SetItemString
         (outdict, "identifier", pystr(desc.identifier));
@@ -181,8 +183,19 @@ convertOutput(const Plugin::OutputDescriptor &desc, int ix)
     PyDict_SetItemString
         (outdict, "description", pystr(desc.description));
     PyDict_SetItemString
-        (outdict, "bin_count", PyInt_FromLong(desc.binCount));
-    if (desc.binCount > 0) {
+        (outdict, "unit", pystr(desc.unit));
+    PyDict_SetItemString
+        (outdict, "has_fixed_bin_count", PyInt_FromLong(desc.hasFixedBinCount));
+    if (desc.hasFixedBinCount) {
+        PyDict_SetItemString
+            (outdict, "bin_count", PyInt_FromLong(desc.binCount));
+        if (!desc.binNames.empty()) {
+            PyDict_SetItemString
+                (outdict, "bin_names", conv.PyValue_From_StringVector(desc.binNames));
+        }
+    }
+    if (!desc.hasFixedBinCount ||
+        (desc.hasFixedBinCount && (desc.binCount > 0))) {
         if (desc.hasKnownExtents) {
             PyDict_SetItemString
                 (outdict, "has_known_extents", Py_True);

@@ -5,6 +5,8 @@ import load
 import process
 import frames
 
+import numpy as np
+
 
 def timestamp_features(sample_rate, step_size, output_desc, features):
     n = -1
@@ -28,7 +30,33 @@ def timestamp_features(sample_rate, step_size, output_desc, features):
             yield f
 
 
-def process_and_fill_timestamps(data, sample_rate, key, output, parameters = {}):
+def fill_timestamps(results, sample_rate, step_size, output_desc):
+
+    output = output_desc["identifier"]
+    
+    selected = [ r[output] for r in results ]
+
+    stamped = timestamp_features(sample_rate, step_size, output_desc, selected)
+
+    for s in stamped:
+        yield s
+
+
+def deduce_shape(output_desc):
+    if output_desc["has_duration"]:
+        return "individual"
+    if output_desc["sample_type"] == vampyhost.VARIABLE_SAMPLE_RATE:
+        return "individual"
+    if not output_desc["has_fixed_bin_count"]:
+        return "individual"
+    if output_desc["bin_count"] == 0:
+        return "individual"
+    if output_desc["bin_count"] > 1:
+        return "matrix"
+    return "vector"
+
+
+def process_and_reshape(data, sample_rate, key, output, parameters = {}):
 
     plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
@@ -42,15 +70,20 @@ def process_and_fill_timestamps(data, sample_rate, key, output, parameters = {})
 
     results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
 
-    selected = [ r[output] for r in results ]
+    shape = deduce_shape(output_desc)
 
-    stamped = timestamp_features(sample_rate, step_size, output_desc, selected)
-
-    for s in stamped:
-        yield s
+    if shape == "vector":
+        rv = np.array([r[output]["values"][0] for r in results])
+    elif shape == "matrix":
+        rv = np.array(
+            [[r[output]["values"][i] for r in results]
+             for i in range(0, output_desc["bin_count"]-1)])
+    else:
+        rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 
     plugin.unload()
-        
+    return rv
+
 
 def collect(data, sample_rate, key, output, parameters = {}):
-    return process_and_fill_timestamps(data, sample_rate, key, output, parameters)
+    return process_and_reshape(data, sample_rate, key, output, parameters)

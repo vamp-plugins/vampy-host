@@ -29,28 +29,26 @@ def test_collect_one_sample_per_step():
     buf = input_data(blocksize * 10)
     results = list(vamp.collect(buf, rate, plugin_key, "input-timestamp"))
     assert len(results) == 10
-    for r in results:
-        assert r["timestamp"] == vamp.vampyhost.frame_to_realtime(r["values"][0], rate)
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the first frame in the
+        # input buffer
+        expected = i * blocksize
+        actual = results[i]
+        assert actual == expected
 
 def test_collect_fixed_sample_rate():
     buf = input_data(blocksize * 10)
     results = list(vamp.collect(buf, rate, plugin_key, "curve-fsr"))
     assert len(results) == 10
-    i = 0
-    for r in results:
-        assert r["timestamp"] == vamp.vampyhost.RealTime('seconds', i * 0.4)
-        assert abs(r["values"][0] - i * 0.1) < eps
-        i = i + 1
+    for i in range(len(results)):
+        assert abs(results[i] - i * 0.1) < eps
 
 def test_collect_fixed_sample_rate_2():
     buf = input_data(blocksize * 10)
     results = list(vamp.collect(buf, rate, plugin_key, "curve-fsr-timed"))
     assert len(results) == 10
-    i = 0
-    for r in results:
-        assert r["timestamp"] == vamp.vampyhost.RealTime('seconds', i * 0.4)
-        assert abs(r["values"][0] - i * 0.1) < eps
-        i = i + 1
+    for i in range(len(results)):
+        assert abs(results[i] - i * 0.1) < eps
         
 def test_collect_variable_sample_rate():
     buf = input_data(blocksize * 10)
