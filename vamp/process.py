@@ -46,6 +46,27 @@ def process(data, sample_rate, key, output = "", parameters = {}):
     plugin.unload()
 
 
+def process_frames(ff, channels, sample_rate, step_size, key, output = "", parameters = {}):
+
+    plug = vampyhost.load_plugin(key, sample_rate,
+                                 vampyhost.ADAPT_INPUT_DOMAIN +
+                                 vampyhost.ADAPT_BUFFER_SIZE +
+                                 vampyhost.ADAPT_CHANNEL_COUNT)
+
+    plug.set_parameter_values(parameters)
+
+    if not plug.initialise(channels, step_size, block_size):
+        raise "Failed to initialise plugin"
+    
+    if output == "":
+        output = plugin.get_output(0)["identifier"]
+
+    for r in process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output]):
+        yield r[output]
+    
+    plugin.unload()
+    
+
 def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
 #!!! docstring
 

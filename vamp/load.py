@@ -25,6 +25,8 @@ def load_and_configure(data, sample_rate, key, parameters):
     if data.ndim > 1:
         channels = data.shape[0]
 
-    plug.initialise(channels, step_size, block_size)
-    return (plug, step_size, block_size)
+    if plug.initialise(channels, step_size, block_size):
+        return (plug, step_size, block_size)
+    else:
+        raise "Failed to initialise plugin"
 

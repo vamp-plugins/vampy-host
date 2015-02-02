@@ -60,20 +60,10 @@ def deduce_shape(output_desc):
         return "vector"
     return "matrix"
 
-def process_and_reshape(data, sample_rate, key, output, parameters = {}):
 
-    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+def reshape(results, sample_rate, step_size, output_desc):
 
-    if output == "":
-        output_desc = plugin.get_output(0)
-        output = output_desc["identifier"]
-    else:
-        output_desc = plugin.get_output(output)
-
-    ff = frames.frames_from_array(data, step_size, block_size)
-
-    results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
-
+    output = output_desc["identifier"]
     shape = deduce_shape(output_desc)
     out_step = get_feature_step_time(sample_rate, step_size, output_desc)
 
@@ -88,9 +78,51 @@ def process_and_reshape(data, sample_rate, key, output, parameters = {}):
     else:
         rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 
+    return rv
+
+        
+def collect(data, sample_rate, key, output, parameters = {}):
+
+    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+
+    if output == "":
+        output_desc = plugin.get_output(0)
+        output = output_desc["identifier"]
+    else:
+        output_desc = plugin.get_output(output)
+
+    ff = frames.frames_from_array(data, step_size, block_size)
+
+    results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
+
+    rv = reshape(results, sample_rate, step_size, output_desc)
+
     plugin.unload()
     return rv
 
+        
+def collect_frames(ff, channels, sample_rate, step_size, key, output, parameters = {}):
 
-def collect(data, sample_rate, key, output, parameters = {}):
-    return process_and_reshape(data, sample_rate, key, output, parameters)
+    plug = vampyhost.load_plugin(key, sample_rate,
+                                 vampyhost.ADAPT_INPUT_DOMAIN +
+                                 vampyhost.ADAPT_BUFFER_SIZE +
+                                 vampyhost.ADAPT_CHANNEL_COUNT)
+
+    plug.set_parameter_values(parameters)
+
+    if not plug.initialise(channels, step_size, block_size):
+        raise "Failed to initialise plugin"
+
+    if output == "":
+        output_desc = plugin.get_output(0)
+        output = output_desc["identifier"]
+    else:
+        output_desc = plugin.get_output(output)
+
+    results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
+
+    rv = reshape(results, sample_rate, step_size, output_desc)
+
+    plugin.unload()
+    return rv
+
