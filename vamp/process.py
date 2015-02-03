@@ -52,6 +52,9 @@ def process(data, sample_rate, key, output = "", parameters = {}):
     dictionary containing, optionally, timestamp and duration
     (RealTime objects), label (string), and a 1-dimensional array of
     float values.
+
+    If you would prefer to obtain all features in a single output
+    structure, consider using vamp.collect() instead.
     """
 
     plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
@@ -92,8 +95,10 @@ def process_frames(ff, sample_rate, step_size, key, output = "", parameters = {}
     dictionary containing, optionally, timestamp and duration
     (RealTime objects), label (string), and a 1-dimensional array of
     float values.
-    """
 
+    If you would prefer to obtain all features in a single output
+    structure, consider using vamp.collect() instead.
+    """
     plugin = vampyhost.load_plugin(key, sample_rate,
                                    vampyhost.ADAPT_INPUT_DOMAIN +
                                    vampyhost.ADAPT_BUFFER_SIZE +
@@ -136,7 +141,28 @@ def process_frames(ff, sample_rate, step_size, key, output = "", parameters = {}
     
 
 def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
-#!!! docstring
+    """Process audio data with a Vamp plugin, and make the results from a
+    set of plugin outputs available as a generator.
+
+    The provided data should be a 1- or 2-dimensional list or NumPy
+    array of floats. If it is 2-dimensional, the first dimension is
+    taken to be the channel count.
+
+    The returned results will be those calculated by the plugin with
+    the given key and returned through its outputs whose identifiers
+    are given in the outputs argument.
+
+    If the parameters dict is non-empty, the plugin will be configured
+    by setting its parameters according to the (string) key and
+    (float) value data found in the dict.
+
+    This function acts as a generator, yielding a sequence of result
+    feature sets as it obtains them. Each feature set is a dictionary
+    mapping from output identifier to a list of features, each
+    represented as a dictionary containing, optionally, timestamp and
+    duration (RealTime objects), label (string), and a 1-dimensional
+    array of float values.
+    """
 
     plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
@@ -146,3 +172,7 @@ def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
         yield r
 
     plugin.unload()
+
+#!!!
+# + process_frames_multiple_outputs
+# + refactor common material
