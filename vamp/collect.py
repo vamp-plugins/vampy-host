@@ -71,10 +71,9 @@ def reshape(results, sample_rate, step_size, output_desc):
         rv = ( out_step,
                np.array([r[output]["values"][0] for r in results], np.float32) )
     elif shape == "matrix":
-        rv = ( out_step,
-               np.array(
-                   [[r[output]["values"][i] for r in results]
-                    for i in range(0, output_desc["bin_count"])], np.float32) )
+        #!!! todo: check that each feature has the right number of bins?
+        outseq = [r[output]["values"] for r in results]
+        rv = ( out_step, np.array(outseq, np.float32) )
     else:
         rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 

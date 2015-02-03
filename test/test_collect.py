@@ -71,6 +71,5 @@ def test_collect_grid_one_sample_per_step():
     assert abs(float(step) - (1024.0 / rate)) < eps
     assert len(results) == 10
     for i in range(len(results)):
-        expected = []
-        actual = results[i]
-        assert actual == expected
+        expected = np.array([ (j + i + 2.0) / 30.0 for j in range(0, 10) ])
+        assert (abs(results[i] - expected) < eps).all()
