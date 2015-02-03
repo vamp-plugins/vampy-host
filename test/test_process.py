@@ -1,6 +1,7 @@
 
 import vamp
 import numpy as np
+import vamp.frames as fr
 
 plugin_key = "vamp-test-plugin:vamp-test-plugin"
 plugin_key_freq = "vamp-test-plugin:vamp-test-plugin-freq"
@@ -62,6 +63,21 @@ def test_process_multi_summary_param_bool():
 def test_process_summary():
     buf = input_data(blocksize * 10)
     results = list(vamp.process(buf, rate, plugin_key, "input-summary", {}))
+    assert len(results) == 10
+    for i in range(len(results)):
+        #
+        # each feature has a single value, equal to the number of non-zero elts
+        # in the input block (which is all of them, i.e. the blocksize) plus
+        # the first elt (which is i * blockSize + 1)
+        #
+        expected = blocksize + i * blocksize + 1
+        actual = results[i]["values"][0]
+        assert actual == expected
+
+def test_process_summary_frames():
+    buf = input_data(blocksize * 10)
+    ff = fr.frames_from_array(buf, blocksize, blocksize)
+    results = list(vamp.process_frames(ff, rate, blocksize, plugin_key, "input-summary", {}))
     assert len(results) == 10
     for i in range(len(results)):
         #

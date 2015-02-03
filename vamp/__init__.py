@@ -2,7 +2,7 @@
 
 import vampyhost
 
-from load import list_plugins
+from load import list_plugins, get_outputs_of, get_category_of
 from process import process, process_frames, process_multiple_outputs
 from collect import collect
 
