@@ -28,7 +28,7 @@ def test_process_without_initialise():
     try:
         plug.process_block([[1,2,3,4]], vh.RealTime(0, 0))
         assert False
-    except StandardError:
+    except Exception:
         pass
 
 def test_process_input_format():

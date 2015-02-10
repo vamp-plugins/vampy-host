@@ -48,26 +48,26 @@ public:
 	if (pyValue && PyLong_Check(pyValue)) {
 	    return true;
 	}
+#if PY_MAJOR_VERSION < 3
 	if (pyValue && PyInt_Check(pyValue)) {
 	    return true;
 	}
+#endif
 	return false;
     }
 	
     static float convert(PyObject* pyValue) {
-	
 	if (pyValue && PyFloat_Check(pyValue)) {
 	    return (float) PyFloat_AS_DOUBLE(pyValue);
 	}
-
 	if (pyValue && PyLong_Check(pyValue)) {
 	    return (float) PyLong_AsDouble(pyValue);
 	}
-
+#if PY_MAJOR_VERSION < 3
 	if (pyValue && PyInt_Check(pyValue)) {
 	    return (float) PyInt_AsLong(pyValue);
 	}
-
+#endif
 	return 0.0;
     }
 };

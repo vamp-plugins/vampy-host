@@ -38,12 +38,12 @@ def test_get_output_by_id():
     try:
         out = plug.get_output("chops")
         assert False
-    except StandardError:
+    except Exception:
         pass
     try:
         out = plug.get_output("")
         assert False
-    except StandardError:
+    except Exception:
         pass
 
 def test_get_output_by_index():
@@ -55,17 +55,17 @@ def test_get_output_by_index():
     try:
         out = plug.get_output(20)
         assert False
-    except StandardError:
+    except Exception:
         pass
     try:
         out = plug.get_output(-1)
         assert False
-    except StandardError:
+    except Exception:
         pass
     try:
         out = plug.get_output(plug)
         assert False
-    except StandardError:
+    except Exception:
         pass
     
 def test_inputdomain():
@@ -102,7 +102,7 @@ def test_setparameter():
     try:
         plug.set_parameter_value("steak", 0)
         assert False
-    except StandardError:
+    except Exception:
         pass
     try:
         plug.get_parameter_value(4)
@@ -112,6 +112,6 @@ def test_setparameter():
     try:
         plug.get_parameter_value("steak")
         assert False
-    except StandardError:
+    except Exception:
         pass
             

@@ -43,6 +43,10 @@
 #define NO_IMPORT_ARRAY
 #include "numpy/arrayobject.h"
 
+#if PY_MAJOR_VERSION < 3
+#include "intobject.h"
+#endif
+
 #include "structmember.h"
 
 #include "FloatConversion.h"
@@ -78,7 +82,22 @@ static
 PyObject *
 pystr(const string &s)
 {
+#if PY_MAJOR_VERSION < 3
     return PyString_FromString(s.c_str());
+#else
+    return PyUnicode_FromString(s.c_str());
+#endif
+}
+
+static
+string
+py2str(PyObject *obj)
+{
+#if PY_MAJOR_VERSION < 3
+    return PyString_AsString(obj);
+#else
+    return PyBytes_AsString(PyUnicode_AsUTF8String(obj));
+#endif
 }
 
 PyObject *
@@ -94,9 +113,9 @@ PyPluginObject_From_Plugin(Plugin *plugin)
 
     PyObject *infodict = PyDict_New();
     PyDict_SetItemString
-        (infodict, "api_version", PyInt_FromLong(plugin->getVampApiVersion()));
+        (infodict, "api_version", PyLong_FromLong(plugin->getVampApiVersion()));
     PyDict_SetItemString
-        (infodict, "plugin_version", PyInt_FromLong(plugin->getPluginVersion()));
+        (infodict, "plugin_version", PyLong_FromLong(plugin->getPluginVersion()));
     PyDict_SetItemString
         (infodict, "identifier", pystr(plugin->getIdentifier()));
     PyDict_SetItemString
@@ -185,10 +204,10 @@ convertOutput(const Plugin::OutputDescriptor &desc, int ix)
     PyDict_SetItemString
         (outdict, "unit", pystr(desc.unit));
     PyDict_SetItemString
-        (outdict, "has_fixed_bin_count", PyInt_FromLong(desc.hasFixedBinCount));
+        (outdict, "has_fixed_bin_count", PyLong_FromLong(desc.hasFixedBinCount));
     if (desc.hasFixedBinCount) {
         PyDict_SetItemString
-            (outdict, "bin_count", PyInt_FromLong(desc.binCount));
+            (outdict, "bin_count", PyLong_FromLong(desc.binCount));
         if (!desc.binNames.empty()) {
             PyDict_SetItemString
                 (outdict, "bin_names", conv.PyValue_From_StringVector(desc.binNames));
@@ -218,13 +237,13 @@ convertOutput(const Plugin::OutputDescriptor &desc, int ix)
         }
     }
     PyDict_SetItemString
-        (outdict, "sample_type", PyInt_FromLong((int)desc.sampleType));
+        (outdict, "sample_type", PyLong_FromLong((int)desc.sampleType));
     PyDict_SetItemString
         (outdict, "sample_rate", PyFloat_FromDouble(desc.sampleRate));
     PyDict_SetItemString
         (outdict, "has_duration", desc.hasDuration ? Py_True : Py_False);
     PyDict_SetItemString
-        (outdict, "output_index", PyInt_FromLong(ix));
+        (outdict, "output_index", PyLong_FromLong(ix));
     return outdict;
 }
 
@@ -249,7 +268,7 @@ get_output(PyObject *self, PyObject *args)
     Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
 
     if (pyId) {
-        string id = PyString_AS_STRING(pyId);
+        string id = py2str(pyId);
         for (int i = 0; i < int(ol.size()); ++i) {
             if (ol[i].identifier == id) {
                 return convertOutput(ol[i], i);
@@ -261,7 +280,7 @@ get_output(PyObject *self, PyObject *args)
         }
     }
 
-    PyErr_SetString(PyExc_StandardError,
+    PyErr_SetString(PyExc_Exception,
                     "unknown output id or output index out of range");
     return 0;
 }
@@ -322,7 +341,7 @@ reset(PyObject *self, PyObject *)
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
-        PyErr_SetString(PyExc_StandardError,
+        PyErr_SetString(PyExc_Exception,
                         "Plugin has not been initialised");
         return 0;
     }
@@ -356,10 +375,10 @@ get_parameter_value(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    string param = PyString_AS_STRING(pyParam);
+    string param = py2str(pyParam);
     
     if (!hasParameter(pd, param)) {
-        PyErr_SetString(PyExc_StandardError,
+        PyErr_SetString(PyExc_Exception,
                         (string("Unknown parameter id \"") + param + "\"").c_str());
         return 0;
     }
@@ -382,10 +401,10 @@ set_parameter_value(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    string param = PyString_AS_STRING(pyParam);
+    string param = py2str(pyParam);
     
     if (!hasParameter(pd, param)) {
-        PyErr_SetString(PyExc_StandardError,
+        PyErr_SetString(PyExc_Exception,
                         (string("Unknown parameter id \"") + param + "\"").c_str());
         return 0;
     }
@@ -421,7 +440,11 @@ set_parameter_values(PyObject *self, PyObject *args)
     Py_ssize_t pos = 0;
     PyObject *key, *value;
     while (PyDict_Next(dict, &pos, &key, &value)) {
+#if PY_MAJOR_VERSION >= 3
+        if (!key || !PyUnicode_CheckExact(key)) {
+#else
         if (!key || !PyString_CheckExact(key)) {
+#endif
             PyErr_SetString(PyExc_TypeError,
                             "Parameter dict keys must all have string type");
             return 0;
@@ -431,9 +454,9 @@ set_parameter_values(PyObject *self, PyObject *args)
                             "Parameter dict values must be convertible to float");
             return 0;
         }
-        string param = PyString_AS_STRING(key);
+        string param = py2str(key);
         if (paramIds.find(param) == paramIds.end()) {
-            PyErr_SetString(PyExc_StandardError,
+            PyErr_SetString(PyExc_Exception,
                             (string("Unknown parameter id \"") + param + "\"").c_str());
             return 0;
         }
@@ -456,7 +479,7 @@ select_program(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    pd->plugin->selectProgram(PyString_AS_STRING(pyParam));
+    pd->plugin->selectProgram(py2str(pyParam));
     return Py_True;
 }
 
@@ -503,7 +526,7 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
                 PyList_SET_ITEM(pyFl, fli, pyF);
             }
 
-            PyObject *pyN = PyInt_FromLong(fno);
+            PyObject *pyN = PyLong_FromLong(fno);
             PyDict_SetItem(pyFs, pyN, pyFl);
         }
     }
@@ -588,7 +611,7 @@ process_block(PyObject *self, PyObject *args)
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
-        PyErr_SetString(PyExc_StandardError,
+        PyErr_SetString(PyExc_Exception,
                         "Plugin has not been initialised.");
         return 0;
     }
@@ -616,7 +639,7 @@ get_remaining_features(PyObject *self, PyObject *)
     if (!pd) return 0;
 
     if (!pd->isInitialised) {
-        PyErr_SetString(PyExc_StandardError,
+        PyErr_SetString(PyExc_Exception,
                         "Plugin has not been initialised.");
         return 0;
     }
@@ -631,7 +654,7 @@ get_preferred_block_size(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
-    return PyInt_FromLong(pd->plugin->getPreferredBlockSize());
+    return PyLong_FromLong(pd->plugin->getPreferredBlockSize());
 }
 
 static PyObject *
@@ -639,7 +662,7 @@ get_preferred_step_size(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
-    return PyInt_FromLong(pd->plugin->getPreferredStepSize());
+    return PyLong_FromLong(pd->plugin->getPreferredStepSize());
 }
 
 static PyObject *
@@ -647,7 +670,7 @@ get_min_channel_count(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
-    return PyInt_FromLong(pd->plugin->getMinChannelCount());
+    return PyLong_FromLong(pd->plugin->getMinChannelCount());
 }
 
 static PyObject *
@@ -655,7 +678,7 @@ get_max_channel_count(PyObject *self, PyObject *)
 {
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
-    return PyInt_FromLong(pd->plugin->getMaxChannelCount());
+    return PyLong_FromLong(pd->plugin->getMaxChannelCount());
 }
     
 static PyObject *
