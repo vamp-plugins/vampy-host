@@ -1,6 +1,7 @@
 
 import vamp
 import numpy as np
+import vamp.frames as fr
 
 plugin_key = "vamp-test-plugin:vamp-test-plugin"
 plugin_key_freq = "vamp-test-plugin:vamp-test-plugin-freq"

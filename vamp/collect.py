@@ -141,31 +141,3 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
     plugin.unload()
     return rv
 
-
-#!!! restore & complete this once process is refactored:
-        
-# def collect_frames(ff, channels, sample_rate, step_size, key, output = "", parameters = {}):
-
-#     plug = vampyhost.load_plugin(key, sample_rate,
-#                                  vampyhost.ADAPT_INPUT_DOMAIN +
-#                                  vampyhost.ADAPT_BUFFER_SIZE +
-#                                  vampyhost.ADAPT_CHANNEL_COUNT)
-
-#     plug.set_parameter_values(parameters)
-
-#     if not plug.initialise(channels, step_size, block_size):
-#         raise "Failed to initialise plugin"
-
-#     if output == "":
-#         output_desc = plugin.get_output(0)
-#         output = output_desc["identifier"]
-#     else:
-#         output_desc = plugin.get_output(output)
-
-#     results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
-
-#     rv = reshape(results, sample_rate, step_size, output_desc)
-
-#     plugin.unload()
-#     return rv
-

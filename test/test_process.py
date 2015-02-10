@@ -74,7 +74,7 @@ def test_process_summary():
         actual = results[i]["values"][0]
         assert actual == expected
 
-def test_process_summary_frames():
+def test_process_frames_summary():
     buf = input_data(blocksize * 10)
     ff = fr.frames_from_array(buf, blocksize, blocksize)
     results = list(vamp.process_frames(ff, rate, blocksize, plugin_key, "input-summary", {}))
@@ -103,7 +103,7 @@ def test_process_multi_summary():
         actual = results[i]["input-summary"]["values"][0]
         assert actual == expected
 
-def test_process_multi_summary_frames():
+def test_process_frames_multi_summary():
     buf = input_data(blocksize * 10)
     ff = fr.frames_from_array(buf, blocksize, blocksize)
     results = list(vamp.process_frames_multiple_outputs(ff, rate, blocksize, plugin_key, [ "input-summary" ], {}))
