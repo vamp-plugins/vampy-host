@@ -4,7 +4,7 @@ import vampyhost
 import frames
 import load
 
-def process_frames_with_plugin(ff, sample_rate, step_size, plugin, outputs):
+def process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs):
 
     out_indices = dict([(id, plugin.get_output(id)["output_index"])
                         for id in outputs])
@@ -64,7 +64,7 @@ def process(data, sample_rate, key, output = "", parameters = {}):
 
     ff = frames.frames_from_array(data, step_size, block_size)
 
-    for r in process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output]):
+    for r in process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output]):
         yield r[output]
     
     plugin.unload()
@@ -168,11 +168,77 @@ def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
 
     ff = frames.frames_from_array(data, step_size, block_size)
 
-    for r in process_frames_with_plugin(ff, sample_rate, step_size, plugin, outputs):
+    for r in process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs):
         yield r
 
     plugin.unload()
 
-#!!!
-# + process_frames_multiple_outputs
-# + refactor common material
+
+def process_frames_multiple_outputs(ff, sample_rate, step_size, key, outputs, parameters = {}):
+    """Process audio data with a Vamp plugin, and make the results from a
+    set of plugin outputs available as a generator.
+
+    The provided data should be an enumerable sequence of time-domain
+    audio frames, of which each frame is 2-dimensional list or NumPy
+    array of floats. The first dimension is taken to be the channel
+    count, and the second dimension the frame or block size. The
+    step_size argument gives the increment in audio samples from one
+    frame to the next. Each frame must have the same size.
+
+    The returned results will be those calculated by the plugin with
+    the given key and returned through its outputs whose identifiers
+    are given in the outputs argument.
+
+    If the parameters dict is non-empty, the plugin will be configured
+    by setting its parameters according to the (string) key and
+    (float) value data found in the dict.
+
+    This function acts as a generator, yielding a sequence of result
+    feature sets as it obtains them. Each feature set is a dictionary
+    mapping from output identifier to a list of features, each
+    represented as a dictionary containing, optionally, timestamp and
+    duration (RealTime objects), label (string), and a 1-dimensional
+    array of float values.
+    """
+    plugin = vampyhost.load_plugin(key, sample_rate,
+                                   vampyhost.ADAPT_INPUT_DOMAIN +
+                                   vampyhost.ADAPT_BUFFER_SIZE +
+                                   vampyhost.ADAPT_CHANNEL_COUNT)
+
+    out_indices = dict([(id, plugin.get_output(id)["output_index"])
+                        for id in outputs])
+    
+    fi = 0
+    channels = 0
+    block_size = 0
+
+    for f in ff:
+
+        if fi == 0:
+            channels = f.shape[0]
+            block_size = f.shape[1]
+            plugin.set_parameter_values(parameters)
+            if not plugin.initialise(channels, step_size, block_size):
+                raise "Failed to initialise plugin"
+
+        timestamp = vampyhost.frame_to_realtime(fi, sample_rate)
+        results = plugin.process_block(f, timestamp)
+        # results is a dict mapping output number -> list of feature dicts
+        for o in outputs:
+            ix = out_indices[o]
+            if ix in results:
+                for r in results[ix]:
+                    yield { o: r }
+        fi = fi + step_size
+
+    if fi > 0:
+        results = plugin.get_remaining_features()
+        for o in outputs:
+            ix = out_indices[o]
+            if ix in results:
+                for r in results[ix]:
+                    yield { o: r }
+        
+    plugin.unload()
+
+

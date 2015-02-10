@@ -123,7 +123,7 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
     plugin returns them, via an asynchronous generator function, use
     vamp.process() instead.
     """
-    
+
     plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
 
     if output == "":
@@ -134,7 +134,7 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
 
     ff = frames.frames_from_array(data, step_size, block_size)
 
-    results = process.process_frames_with_plugin(ff, sample_rate, step_size, plugin, [output])
+    results = process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
 
     rv = reshape(results, sample_rate, step_size, output_desc)
 
