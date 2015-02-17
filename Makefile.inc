@@ -6,6 +6,10 @@ CC		?= gcc
 
 SRC_DIR		:= native
 
+PLUGIN_EXT	?= $(LIBRARY_EXT)
+TESTPLUG_DIR	:= test/vamp-test-plugin
+TESTPLUG	:= $(TESTPLUG_DIR)/vamp-test-plugin$(PLUGIN_EXT)
+
 HEADERS		:= $(SRC_DIR)/PyPluginObject.h $(SRC_DIR)/PyRealTime.h $(SRC_DIR)/FloatConversion.h $(SRC_DIR)/VectorConversion.h
 SOURCES		:= $(SRC_DIR)/PyPluginObject.cpp $(SRC_DIR)/PyRealTime.cpp $(SRC_DIR)/VectorConversion.cpp $(SRC_DIR)/vampyhost.cpp
 
@@ -20,18 +24,24 @@ all:		$(LIBRARY) .tests
 $(LIBRARY):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
 
-.tests:		$(LIBRARY) $(PY) $(TESTS)
-		$(NOSE)
+.tests:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
+		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
 		@touch $@
 
+$(TESTPLUG):	
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT)
+ 
 clean:		
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) clean
 		rm -f $(OBJECTS)
 
 distclean:	clean
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) distclean
 		rm -f $(LIBRARY)
 
 depend:
-	makedepend -Y -fMakefile.inc $(SOURCES) $(HEADERS)
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) depend
+		makedepend -Y -fMakefile.inc $(SOURCES) $(HEADERS)
 
 # DO NOT DELETE
 

@@ -19,6 +19,8 @@ LDFLAGS 		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic \
 
 NOSE			:= $(PY_TEST)
 
-LIBRARY_EXT := .so
+LIBRARY_EXT 		:= .so
+
+MAKEFILE_EXT		:= .linux
 
 include Makefile.inc
