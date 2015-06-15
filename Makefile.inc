@@ -29,7 +29,7 @@ $(LIBRARY):	$(OBJECTS)
 		@touch $@
 
 $(TESTPLUG):	
-		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT)
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) VAMPSDK_DIR=../../../vamp-plugin-sdk
  
 clean:		
 		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) clean

@@ -1,0 +1,27 @@
+
+PY_INCLUDE_PATH		:= /anaconda/include/python2.7
+NUMPY_INCLUDE_PATH 	:= /anaconda/pkgs/numpy-1.9.2-py27_0/lib/python2.7/site-packages/numpy/core/include
+PY_LIB			:= python2.7
+PY_TEST			:= nosetests2
+
+#PY_INCLUDE_PATH		:= /usr/include/python3.4m
+#NUMPY_INCLUDE_PATH 	:= /usr/lib/python3.4m/site-packages/numpy/core/include
+#PY_LIB			:= python3
+#PY_TEST			:= nosetests3
+
+ARCHFLAGS ?= -mmacosx-version-min=10.7 -arch x86_64 -arch i386 -stdlib=libc++
+
+# Compile flags
+#
+CFLAGS          += $(ARCHFLAGS) -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH) -I../vamp-plugin-sdk
+CXXFLAGS        += $(ARCHFLAGS) -O2 -Wall -I. -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH) -I../vamp-plugin-sdk
+
+LDFLAGS 		:= -dynamiclib -L../vamp-plugin-sdk -lvamp-hostsdk -L/anaconda/lib/ -lpython -ldl
+
+NOSE			:= $(PY_TEST)
+
+LIBRARY_EXT 		:= .dylib
+
+MAKEFILE_EXT		:= .osx
+
+include Makefile.inc
