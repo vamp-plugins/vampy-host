@@ -70,7 +70,7 @@ def test_get_output_by_index():
     
 def test_inputdomain():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
-    assert plug.input_domain == vh.TIME_DOMAIN
+    assert plug.inputDomain == vh.TIME_DOMAIN
 
 def test_info():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)

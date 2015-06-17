@@ -699,8 +699,8 @@ static PyMemberDef PyPluginObject_members[] =
     {(char *)"info", T_OBJECT, offsetof(PyPluginObject, info), READONLY,
      (char *)"info -> A read-only dictionary of plugin metadata."},
 
-    {(char *)"input_domain", T_INT, offsetof(PyPluginObject, inputDomain), READONLY,
-     (char *)"input_domain -> The format of input audio required by the plugin, either vampyhost.TIME_DOMAIN or vampyhost.FREQUENCY_DOMAIN."},
+    {(char *)"inputDomain", T_INT, offsetof(PyPluginObject, inputDomain), READONLY,
+     (char *)"inputDomain -> The format of input audio required by the plugin, either vampyhost.TIME_DOMAIN or vampyhost.FREQUENCY_DOMAIN."},
 
     {(char *)"parameters", T_OBJECT, offsetof(PyPluginObject, parameters), READONLY,
      (char *)"parameters -> A list of metadata dictionaries describing the plugin's configurable parameters."},
