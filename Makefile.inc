@@ -19,14 +19,19 @@ TESTS		:= $(wildcard test/test_*.py)
 OBJECTS		:= $(SOURCES:.cpp=.o)
 OBJECTS		:= $(OBJECTS:.c=.o)
 
-all:		$(LIBRARY) .tests
+default:	$(LIBRARY)
 
-$(LIBRARY):	$(OBJECTS)
-		$(CXX) -o $@ $^ $(LDFLAGS)
+all:		$(LIBRARY) .tests
 
 .tests:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
 		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
 		@touch $@
+		
+test:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
+		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
+
+$(LIBRARY):	$(OBJECTS)
+		$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(TESTPLUG):	
 		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) VAMPSDK_DIR=../../../vamp-plugin-sdk
