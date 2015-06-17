@@ -38,7 +38,7 @@ $(TESTPLUG):
  
 clean:		
 		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) clean
-		rm -f $(OBJECTS)
+		rm -f $(OBJECTS) .tests
 
 distclean:	clean
 		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) distclean
