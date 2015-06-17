@@ -7,7 +7,7 @@
 
     Gyorgy Fazekas and Chris Cannam
     Centre for Digital Music, Queen Mary, University of London
-    Copyright 2008-2014 Queen Mary, University of London
+    Copyright 2008-2015 Queen Mary, University of London
   
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation

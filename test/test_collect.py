@@ -23,14 +23,16 @@ def input_data(n):
 
 def test_collect_runs_at_all():
     buf = input_data(blocksize * 10)
-    step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
+    rdict = vamp.collect(buf, rate, plugin_key, "input-timestamp")
+    step, results = rdict["vector"]
     assert results != []
 
 ##!!! add test for default output
     
 def test_collect_one_sample_per_step():
     buf = input_data(blocksize * 10)
-    step, results = vamp.collect(buf, rate, plugin_key, "input-timestamp")
+    rdict = vamp.collect(buf, rate, plugin_key, "input-timestamp")
+    step, results = rdict["vector"]
     assert abs(float(step) - (1024.0 / rate)) < eps
     assert len(results) == 10
     for i in range(len(results)):
@@ -42,7 +44,8 @@ def test_collect_one_sample_per_step():
 
 def test_collect_fixed_sample_rate():
     buf = input_data(blocksize * 10)
-    step, results = vamp.collect(buf, rate, plugin_key, "curve-fsr")
+    rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr")
+    step, results = rdict["vector"]
     assert abs(float(step) - 0.4) < eps
     assert len(results) == 10
     for i in range(len(results)):
@@ -50,7 +53,8 @@ def test_collect_fixed_sample_rate():
 
 def test_collect_fixed_sample_rate_2():
     buf = input_data(blocksize * 10)
-    step, results = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
+    rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
+    step, results = rdict["vector"]
     assert abs(float(step) - 0.4) < eps
     assert len(results) == 10
     for i in range(len(results)):
@@ -58,7 +62,8 @@ def test_collect_fixed_sample_rate_2():
         
 def test_collect_variable_sample_rate():
     buf = input_data(blocksize * 10)
-    results = vamp.collect(buf, rate, plugin_key, "curve-vsr")
+    rdict = vamp.collect(buf, rate, plugin_key, "curve-vsr")
+    results = rdict["list"]
     assert len(results) == 10
     i = 0
     for r in results:
@@ -68,7 +73,8 @@ def test_collect_variable_sample_rate():
 
 def test_collect_grid_one_sample_per_step():
     buf = input_data(blocksize * 10)
-    step, results = vamp.collect(buf, rate, plugin_key, "grid-oss")
+    rdict = vamp.collect(buf, rate, plugin_key, "grid-oss")
+    step, results = rdict["matrix"]
     assert abs(float(step) - (1024.0 / rate)) < eps
     assert len(results) == 10
     for i in range(len(results)):

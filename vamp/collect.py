@@ -1,3 +1,32 @@
+#!/usr/bin/env python
+
+#   Python Vamp Host
+#   Copyright (c) 2008-2015 Queen Mary, University of London
+#
+#   Permission is hereby granted, free of charge, to any person
+#   obtaining a copy of this software and associated documentation
+#   files (the "Software"), to deal in the Software without
+#   restriction, including without limitation the rights to use, copy,
+#   modify, merge, publish, distribute, sublicense, and/or sell copies
+#   of the Software, and to permit persons to whom the Software is
+#   furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be
+#   included in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+#   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+#   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+#   Except as contained in this notice, the names of the Centre for
+#   Digital Music and Queen Mary, University of London shall not be
+#   used in advertising or otherwise to promote the sale, use or other
+#   dealings in this Software without prior written authorization.
+
 '''A high-level interface to the vampyhost extension module, for quickly and easily running Vamp audio analysis plugins on audio files and buffers.'''
 
 import vampyhost
@@ -49,22 +78,21 @@ def fill_timestamps(results, sample_rate, step_size, output_desc):
 
 def deduce_shape(output_desc):
     if output_desc["hasDuration"]:
-        return "individual"
+        return "list"
     if output_desc["sampleType"] == vampyhost.VARIABLE_SAMPLE_RATE:
-        return "individual"
+        return "list"
     if not output_desc["hasFixedBinCount"]:
-        return "individual"
+        return "list"
     if output_desc["binCount"] == 0:
-        return "individual"
+        return "list"
     if output_desc["binCount"] == 1:
         return "vector"
     return "matrix"
 
 
-def reshape(results, sample_rate, step_size, output_desc):
+def reshape(results, sample_rate, step_size, output_desc, shape):
 
     output = output_desc["identifier"]
-    shape = deduce_shape(output_desc)
     out_step = get_feature_step_time(sample_rate, step_size, output_desc)
 
     if shape == "vector":
@@ -97,31 +125,37 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
     by setting its parameters according to the (string) key and
     (float) value data found in the dict.
 
-    The structure in which the results are returned depends upon the
-    output descriptor for the requested plugin output, as follows:
+    The results are returned in a dictionary which will always contain
+    exactly one element, whose key is one of the strings "vector",
+    "matrix", or "list". Which one is used depends on the structure of
+    features set out in the output descriptor for the requested plugin
+    output:
 
     * If the plugin output emits single-valued features at a fixed
-      sample-rate, then this function will return a tuple of step time
-      (the time in seconds between consecutive feature values) and a
-      one-dimensional NumPy array of feature values. An example of
-      such a feature might be a loudness curve against time.
+      sample-rate, then the "vector" element will be used. It will
+      contain a tuple of step time (the time in seconds between
+      consecutive feature values) and a one-dimensional NumPy array of
+      feature values. An example of such a feature might be a loudness
+      curve against time.
 
     * If the plugin output emits multiple-valued features, with an
       equal number of bins per feature, at a fixed sample-rate, then
-      this function will return a tuple of step time (the time in
-      seconds between consecutive feature values) and a
-      two-dimensional NumPy array of feature values. An example of
-      such a feature might be a spectrogram.
+      the "matrix" element will be used. It will contain a tuple of
+      step time (the time in seconds between consecutive feature
+      values) and a two-dimensional NumPy array of feature values. An
+      example of such a feature might be a spectrogram.
 
-    * Otherwise this function will return a list of features, where
-      each feature is represented as a dictionary containing a
-      timestamp (always) and a duration (optionally), a label
-      (string), and a 1-dimensional array of float values.
+    * Otherwise, the "list" element will be used, and will contain a
+      list of features, where each feature is represented as a
+      dictionary containing a timestamp (always) and a duration
+      (optionally), a label (string), and a 1-dimensional array of
+      float values.
 
     If you would prefer to obtain features as they are calculated
     (where the plugin supports this) and with the format in which the
     plugin returns them, via an asynchronous generator function, use
     vamp.process() instead.
+
     """
 
     plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
@@ -136,8 +170,9 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
 
     results = vamp.process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
 
-    rv = reshape(results, sample_rate, step_size, output_desc)
+    shape = deduce_shape(output_desc)
+    rv = reshape(results, sample_rate, step_size, output_desc, shape)
 
     plugin.unload()
-    return rv
+    return { shape : rv }
 

@@ -47,7 +47,7 @@ def test_process_summary_param():
 
 def test_process_multi_summary_param():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": 0 }))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": 0 }))
     assert len(results) == 0
 
 def test_process_summary_param_bool():
@@ -57,7 +57,7 @@ def test_process_summary_param_bool():
 
 def test_process_multi_summary_param_bool():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": False }))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], { "produce_output": False }))
     assert len(results) == 0
 
 def test_process_summary():
@@ -91,7 +91,7 @@ def test_process_frames_summary():
 
 def test_process_multi_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], {}))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key, [ "input-summary" ], {}))
     assert len(results) == 10
     for i in range(len(results)):
         #
@@ -158,7 +158,7 @@ def test_process_freq_summary():
 
 def test_process_multi_freq_summary():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key_freq, [ "input-summary" ], {}))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key_freq, [ "input-summary" ], {}))
     assert len(results) == 20
     for i in range(len(results)):
         expected = i * (blocksize/2) + blocksize/2 + 1   # "first" elt
@@ -182,7 +182,7 @@ def test_process_timestamps():
 
 def test_process_multi_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-timestamp" ]))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key, [ "input-timestamp" ]))
     assert len(results) == 10
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
@@ -204,7 +204,7 @@ def test_process_freq_timestamps():
 
 def test_process_multi_freq_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key_freq, [ "input-timestamp" ], {}))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key_freq, [ "input-timestamp" ], {}))
     assert len(results) == 20
     for i in range(len(results)):
         # The timestamp should be the frame number of the frame just beyond
@@ -215,7 +215,7 @@ def test_process_multi_freq_timestamps():
 
 def test_process_multiple_outputs():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_multiple_outputs(buf, rate, plugin_key, [ "input-summary", "input-timestamp" ], {}))
+    results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key, [ "input-summary", "input-timestamp" ], {}))
     assert len(results) == 20
     si = 0
     ti = 0
