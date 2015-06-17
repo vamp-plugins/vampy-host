@@ -243,7 +243,7 @@ convertOutput(const Plugin::OutputDescriptor &desc, int ix)
     PyDict_SetItemString
         (outdict, "hasDuration", desc.hasDuration ? Py_True : Py_False);
     PyDict_SetItemString
-        (outdict, "outputIndex", PyLong_FromLong(ix));
+        (outdict, "output_index", PyLong_FromLong(ix));
     return outdict;
 }
 

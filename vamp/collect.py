@@ -8,23 +8,23 @@ import frames
 import numpy as np
 
 def get_feature_step_time(sample_rate, step_size, output_desc):
-    if output_desc["sample_type"] == vampyhost.ONE_SAMPLE_PER_STEP:
+    if output_desc["sampleType"] == vampyhost.ONE_SAMPLE_PER_STEP:
         return vampyhost.frame_to_realtime(step_size, sample_rate)
-    elif output_desc["sample_type"] == vampyhost.FIXED_SAMPLE_RATE:
-        return vampyhost.RealTime('seconds', 1.0 / output_desc["sample_rate"])
+    elif output_desc["sampleType"] == vampyhost.FIXED_SAMPLE_RATE:
+        return vampyhost.RealTime('seconds', 1.0 / output_desc["sampleRate"])
     else:
         return 1
 
 def timestamp_features(sample_rate, step_size, output_desc, features):
     n = -1
-    if output_desc["sample_type"] == vampyhost.ONE_SAMPLE_PER_STEP:
+    if output_desc["sampleType"] == vampyhost.ONE_SAMPLE_PER_STEP:
         for f in features:
             n = n + 1
             t = vampyhost.frame_to_realtime(n * step_size, sample_rate)
             f["timestamp"] = t
             yield f
-    elif output_desc["sample_type"] == vampyhost.FIXED_SAMPLE_RATE:
-        output_rate = output_desc["sample_rate"]
+    elif output_desc["sampleType"] == vampyhost.FIXED_SAMPLE_RATE:
+        output_rate = output_desc["sampleRate"]
         for f in features:
             if "has_timestamp" in f:
                 n = int(f["timestamp"].to_float() * output_rate + 0.5)
@@ -48,15 +48,15 @@ def fill_timestamps(results, sample_rate, step_size, output_desc):
         yield s
 
 def deduce_shape(output_desc):
-    if output_desc["has_duration"]:
+    if output_desc["hasDuration"]:
         return "individual"
-    if output_desc["sample_type"] == vampyhost.VARIABLE_SAMPLE_RATE:
+    if output_desc["sampleType"] == vampyhost.VARIABLE_SAMPLE_RATE:
         return "individual"
-    if not output_desc["has_fixed_bin_count"]:
+    if not output_desc["hasFixedBinCount"]:
         return "individual"
-    if output_desc["bin_count"] == 0:
+    if output_desc["binCount"] == 0:
         return "individual"
-    if output_desc["bin_count"] == 1:
+    if output_desc["binCount"] == 1:
         return "vector"
     return "matrix"
 

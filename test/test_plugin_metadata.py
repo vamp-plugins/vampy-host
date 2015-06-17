@@ -33,7 +33,7 @@ def test_getoutputlist_2():
 def test_get_output_by_id():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     out = plug.get_output("input-summary")
-    assert "sample_type" in out
+    assert "sampleType" in out
     assert out["output_index"] == 8
     try:
         out = plug.get_output("chops")
@@ -49,7 +49,7 @@ def test_get_output_by_id():
 def test_get_output_by_index():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     out = plug.get_output(0)
-    assert "sample_type" in out
+    assert "sampleType" in out
     assert out["identifier"] == "instants"
     assert out["output_index"] == 0
     try:
