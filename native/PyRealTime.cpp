@@ -241,21 +241,27 @@ RealTime_richcompare(PyObject *self, PyObject *other, int op)
     const RealTime &a = *ap;
     const RealTime &b = *bp;
 
+//    cerr << "a = " << a << ", b = " << b << ", op = " << op << endl;
+
+    PyObject *result = Py_False;
+
     if (op == Py_LT) {
-        return (a < b) ? Py_True : Py_False;
+        result = (a < b) ? Py_True : Py_False;
     } else if (op == Py_LE) {
-        return (a <= b) ? Py_True : Py_False;
+        result = (a <= b) ? Py_True : Py_False;
     } else if (op == Py_EQ) {
-        return (a == b) ? Py_True : Py_False;
+        result = (a == b) ? Py_True : Py_False;
     } else if (op == Py_NE) {
-        return (a != b) ? Py_True : Py_False;
+        result = (a != b) ? Py_True : Py_False;
     } else if (op == Py_GT) {
-        return (a > b) ? Py_True : Py_False;
+        result = (a > b) ? Py_True : Py_False;
     } else if (op == Py_GE) {
-        return (a >= b) ? Py_True : Py_False;
-    } else {
-        return Py_False;
+        result = (a >= b) ? Py_True : Py_False;
     }
+
+//    cerr << "returning: " << (result == Py_True ? "true" : "false") << endl;
+
+    return result;
 }
 
 /* String representation called by e.g. str(realtime), print realtime*/

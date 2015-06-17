@@ -200,6 +200,8 @@ def test_process_freq_timestamps():
         # half-way through the input buffer
         expected = i * (blocksize/2) + blocksize/2
         actual = results[i]["values"][0]
+        if actual == 2047 and expected == 2048:
+            print("This test fails because of a bug in the Vamp plugin SDK. Please update to SDK version 2.6.")
         assert actual == expected
 
 def test_process_multi_freq_timestamps():
@@ -211,6 +213,8 @@ def test_process_multi_freq_timestamps():
         # half-way through the input buffer
         expected = i * (blocksize/2) + blocksize/2
         actual = results[i]["input-timestamp"]["values"][0]
+        if actual == 2047 and expected == 2048:
+            print("This test fails because of a bug in the Vamp plugin SDK. Please update to SDK version 2.6.")
         assert actual == expected
 
 def test_process_multiple_outputs():
