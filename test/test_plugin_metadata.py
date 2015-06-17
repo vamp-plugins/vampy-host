@@ -12,10 +12,10 @@ expectedVersion = 3
 def test_plugin_exists():
     assert plugin_key in vh.list_plugins()
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
-    assert "plugin_version" in plug.info
-    if plug.info["plugin_version"] != expectedVersion:
-        print("Test plugin version " + str(plug.info["plugin_version"]) + " does not match expected version " + str(expectedVersion))
-    assert plug.info["plugin_version"] == expectedVersion
+    assert "pluginVersion" in plug.info
+    if plug.info["pluginVersion"] != expectedVersion:
+        print("Test plugin version " + str(plug.info["pluginVersion"]) + " does not match expected version " + str(expectedVersion))
+    assert plug.info["pluginVersion"] == expectedVersion
 
 def test_plugin_exists_in_freq_version():
     assert plugin_key_freq in vh.list_plugins()
@@ -83,8 +83,8 @@ def test_parameterdescriptors():
 def test_setparameter():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     assert plug.parameters[0]["identifier"] == "produce_output"
-    assert plug.parameters[0]["default_value"] == 1
-    assert plug.get_parameter_value("produce_output") == plug.parameters[0]["default_value"]
+    assert plug.parameters[0]["defaultValue"] == 1
+    assert plug.get_parameter_value("produce_output") == plug.parameters[0]["defaultValue"]
     assert plug.set_parameter_value("produce_output", 0) == True
     assert plug.get_parameter_value("produce_output") == 0
     assert plug.set_parameter_values({ "produce_output": 1 }) == True
