@@ -166,6 +166,8 @@ PyPluginObject_From_Plugin(Plugin *plugin)
 static void
 PyPluginObject_dealloc(PyPluginObject *self)
 {
+//    cerr << "PyPluginObject_dealloc: plugin object " << self << ", plugin " << self->plugin << endl;
+
     delete self->plugin;
     PyObject_Del(self);
 }
@@ -704,6 +706,8 @@ unload(PyObject *self, PyObject *)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
+//    cerr << "unload: unloading plugin object " << pd << ", plugin " << pd->plugin << endl;
+    
     delete pd->plugin;
     pd->plugin = 0; // This is checked by getPluginObject, so we avoid
                     // blowing up if called repeatedly
