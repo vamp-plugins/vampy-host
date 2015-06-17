@@ -6,7 +6,7 @@ PY_TEST			:= nosetests2
 
 #PY_INCLUDE_PATH		:= /usr/include/python3.4m
 #NUMPY_INCLUDE_PATH 	:= /usr/lib/python3.4m/site-packages/numpy/core/include
-#PY_LIB			:= python3
+#PY_LIB			:= python3.4m
 #PY_TEST			:= nosetests3
 
 CFLAGS 			:= -O2 -Wall -Werror -fno-strict-aliasing -fPIC \

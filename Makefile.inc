@@ -26,8 +26,9 @@ all:		$(LIBRARY) .tests
 .tests:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
 		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
 		@touch $@
-		
-test:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
+
+.PHONY:		test
+test:		
 		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
 
 $(LIBRARY):	$(OBJECTS)
@@ -51,8 +52,10 @@ depend:
 # DO NOT DELETE
 
 native/PyPluginObject.o: native/PyPluginObject.h native/FloatConversion.h
-native/PyPluginObject.o: native/VectorConversion.h native/PyRealTime.h
+native/PyPluginObject.o: native/VectorConversion.h native/StringConversion.h
+native/PyPluginObject.o: native/PyRealTime.h
 native/PyRealTime.o: native/PyRealTime.h
-native/VectorConversion.o: native/FloatConversion.h native/VectorConversion.h
+native/VectorConversion.o: native/VectorConversion.h native/FloatConversion.h
+native/VectorConversion.o: native/StringConversion.h
 native/vampyhost.o: native/PyRealTime.h native/PyPluginObject.h
-native/vampyhost.o: native/VectorConversion.h
+native/vampyhost.o: native/VectorConversion.h native/StringConversion.h

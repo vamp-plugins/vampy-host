@@ -6,7 +6,7 @@ import vamp.frames as fr
 plugin_key = "vamp-test-plugin:vamp-test-plugin"
 plugin_key_freq = "vamp-test-plugin:vamp-test-plugin-freq"
 
-rate = 44100
+rate = 44100.0
 
 # Throughout this file we have the assumption that the plugin gets run with a
 # blocksize of 1024, and with a step of 1024 for the time-domain version or 512

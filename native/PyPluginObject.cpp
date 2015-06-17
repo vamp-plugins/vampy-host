@@ -51,6 +51,7 @@
 
 #include "FloatConversion.h"
 #include "VectorConversion.h"
+#include "StringConversion.h"
 #include "PyRealTime.h"
 
 #include <string>
@@ -78,28 +79,6 @@ getPluginObject(PyObject *pyPluginHandle)
     }
 }
 
-static
-PyObject *
-pystr(const string &s)
-{
-#if PY_MAJOR_VERSION < 3
-    return PyString_FromString(s.c_str());
-#else
-    return PyUnicode_FromString(s.c_str());
-#endif
-}
-
-static
-string
-py2str(PyObject *obj)
-{
-#if PY_MAJOR_VERSION < 3
-    return PyString_AsString(obj);
-#else
-    return PyBytes_AsString(PyUnicode_AsUTF8String(obj));
-#endif
-}
-
 PyObject *
 PyPluginObject_From_Plugin(Plugin *plugin)
 {
@@ -111,21 +90,23 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     pd->blockSize = 0;
     pd->stepSize = 0;
 
+    StringConversion strconv;
+    
     PyObject *infodict = PyDict_New();
     PyDict_SetItemString
         (infodict, "apiVersion", PyLong_FromLong(plugin->getVampApiVersion()));
     PyDict_SetItemString
         (infodict, "pluginVersion", PyLong_FromLong(plugin->getPluginVersion()));
     PyDict_SetItemString
-        (infodict, "identifier", pystr(plugin->getIdentifier()));
+        (infodict, "identifier", strconv.string2py(plugin->getIdentifier()));
     PyDict_SetItemString
-        (infodict, "name", pystr(plugin->getName()));
+        (infodict, "name", strconv.string2py(plugin->getName()));
     PyDict_SetItemString
-        (infodict, "description", pystr(plugin->getDescription()));
+        (infodict, "description", strconv.string2py(plugin->getDescription()));
     PyDict_SetItemString
-        (infodict, "maker", pystr(plugin->getMaker()));
+        (infodict, "maker", strconv.string2py(plugin->getMaker()));
     PyDict_SetItemString
-        (infodict, "copyright", pystr(plugin->getCopyright()));
+        (infodict, "copyright", strconv.string2py(plugin->getCopyright()));
     pd->info = infodict;
 
     pd->inputDomain = plugin->getInputDomain();
@@ -138,13 +119,13 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     for (int i = 0; i < (int)pl.size(); ++i) {
         PyObject *paramdict = PyDict_New();
         PyDict_SetItemString
-            (paramdict, "identifier", pystr(pl[i].identifier));
+            (paramdict, "identifier", strconv.string2py(pl[i].identifier));
         PyDict_SetItemString
-            (paramdict, "name", pystr(pl[i].name));
+            (paramdict, "name", strconv.string2py(pl[i].name));
         PyDict_SetItemString
-            (paramdict, "description", pystr(pl[i].description));
+            (paramdict, "description", strconv.string2py(pl[i].description));
         PyDict_SetItemString
-            (paramdict, "unit", pystr(pl[i].unit));
+            (paramdict, "unit", strconv.string2py(pl[i].unit));
         PyDict_SetItemString
             (paramdict, "minValue", PyFloat_FromDouble(pl[i].minValue));
         PyDict_SetItemString
@@ -174,7 +155,7 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     PyObject *progs = PyList_New(prl.size());
 
     for (int i = 0; i < (int)prl.size(); ++i) {
-        PyList_SET_ITEM(progs, i, pystr(prl[i]));
+        PyList_SET_ITEM(progs, i, strconv.string2py(prl[i]));
     }
 
     pd->programs = progs;
@@ -193,16 +174,17 @@ static PyObject *
 convertOutput(const Plugin::OutputDescriptor &desc, int ix)
 {
     VectorConversion conv;
+    StringConversion strconv;
     
     PyObject *outdict = PyDict_New();
     PyDict_SetItemString
-        (outdict, "identifier", pystr(desc.identifier));
+        (outdict, "identifier", strconv.string2py(desc.identifier));
     PyDict_SetItemString
-        (outdict, "name", pystr(desc.name));
+        (outdict, "name", strconv.string2py(desc.name));
     PyDict_SetItemString
-        (outdict, "description", pystr(desc.description));
+        (outdict, "description", strconv.string2py(desc.description));
     PyDict_SetItemString
-        (outdict, "unit", pystr(desc.unit));
+        (outdict, "unit", strconv.string2py(desc.unit));
     PyDict_SetItemString
         (outdict, "hasFixedBinCount", PyLong_FromLong(desc.hasFixedBinCount));
     if (desc.hasFixedBinCount) {
@@ -253,11 +235,17 @@ get_output(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    int n = -1;
+    ssize_t n = -1;
     PyObject *pyId = 0;
     
     if (!PyArg_ParseTuple(args, "n", &n) &&
-        !PyArg_ParseTuple(args, "S", &pyId)) {
+        !PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyId)) {
         PyErr_SetString(PyExc_TypeError,
                         "get_output takes either output id (string) or output index (int) argument");
         return 0;
@@ -267,8 +255,10 @@ get_output(PyObject *self, PyObject *args)
     
     Plugin::OutputList ol = pd->plugin->getOutputDescriptors();
 
+    StringConversion strconv;
+    
     if (pyId) {
-        string id = py2str(pyId);
+        string id = strconv.py2string(pyId);
         for (int i = 0; i < int(ol.size()); ++i) {
             if (ol[i].identifier == id) {
                 return convertOutput(ol[i], i);
@@ -304,12 +294,12 @@ get_outputs(PyObject *self, PyObject *args)
 static PyObject *
 initialise(PyObject *self, PyObject *args)
 {
-    size_t channels, blockSize, stepSize;
+    ssize_t channels, blockSize, stepSize;
 
     if (!PyArg_ParseTuple (args, "nnn",
-                           (size_t) &channels,
-                           (size_t) &stepSize,
-                           (size_t) &blockSize)) {
+                           &channels,
+                           &stepSize,
+                           &blockSize)) {
         PyErr_SetString(PyExc_TypeError,
                         "initialise() takes channel count, step size, and block size arguments");
         return 0;
@@ -367,7 +357,13 @@ get_parameter_value(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
-    if (!PyArg_ParseTuple(args, "S", &pyParam)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
                         "get_parameter_value() takes parameter id (string) argument");
         return 0; }
@@ -375,7 +371,9 @@ get_parameter_value(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    string param = py2str(pyParam);
+    StringConversion strconv;
+    
+    string param = strconv.py2string(pyParam);
     
     if (!hasParameter(pd, param)) {
         PyErr_SetString(PyExc_Exception,
@@ -393,7 +391,13 @@ set_parameter_value(PyObject *self, PyObject *args)
     PyObject *pyParam;
     float value;
 
-    if (!PyArg_ParseTuple(args, "Sf", &pyParam, &value)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "Uf",
+#else
+                          "Sf",
+#endif
+                          &pyParam, &value)) {
         PyErr_SetString(PyExc_TypeError,
                         "set_parameter_value() takes parameter id (string), and value (float) arguments");
         return 0; }
@@ -401,7 +405,9 @@ set_parameter_value(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    string param = py2str(pyParam);
+    StringConversion strconv;
+    
+    string param = strconv.py2string(pyParam);
     
     if (!hasParameter(pd, param)) {
         PyErr_SetString(PyExc_Exception,
@@ -454,7 +460,8 @@ set_parameter_values(PyObject *self, PyObject *args)
                             "Parameter dict values must be convertible to float");
             return 0;
         }
-        string param = py2str(key);
+        StringConversion strconv;
+        string param = strconv.py2string(key);
         if (paramIds.find(param) == paramIds.end()) {
             PyErr_SetString(PyExc_Exception,
                             (string("Unknown parameter id \"") + param + "\"").c_str());
@@ -471,7 +478,13 @@ select_program(PyObject *self, PyObject *args)
 {
     PyObject *pyParam;
 
-    if (!PyArg_ParseTuple(args, "S", &pyParam)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
                         "select_program() takes parameter id (string) argument");
         return 0; }
@@ -479,7 +492,9 @@ select_program(PyObject *self, PyObject *args)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    pd->plugin->selectProgram(py2str(pyParam));
+    StringConversion strconv;
+    
+    pd->plugin->selectProgram(strconv.py2string(pyParam));
     return Py_True;
 }
 
@@ -515,8 +530,10 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
                         (pyF, "duration", PyRealTime_FromRealTime(f.duration));
                 }
 
+                StringConversion strconv;
+    
                 PyDict_SetItemString
-                    (pyF, "label", pystr(f.label));
+                    (pyF, "label", strconv.string2py(f.label));
 
                 if (!f.values.empty()) {
                     PyDict_SetItemString
@@ -764,8 +781,7 @@ static PyMethodDef PyPluginObject_methods[] =
 /* Doc:: 10.3 Type Objects */ /* static */ 
 PyTypeObject Plugin_Type = 
 {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "vampyhost.Plugin",                 /*tp_name*/
     sizeof(PyPluginObject),             /*tp_basicsize*/
     0,                                  /*tp_itemsize*/

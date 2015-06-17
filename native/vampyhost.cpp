@@ -52,6 +52,7 @@
 #include "vamp-hostsdk/PluginLoader.h"
 
 #include "VectorConversion.h"
+#include "StringConversion.h"
 #include "PyRealTime.h"
 
 #include <iostream>
@@ -83,7 +84,7 @@ get_plugin_path(PyObject *self, PyObject *)
 static string toPluginKey(PyObject *pyPluginKey)
 {
     // convert to stl string
-    string pluginKey(PyString_AS_STRING(pyPluginKey));
+    string pluginKey(StringConversion().py2string(pyPluginKey));
 
     // check pluginKey validity
     string::size_type ki = pluginKey.find(':');
@@ -101,7 +102,13 @@ get_library_for(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
-    if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
                         "get_library_for() takes plugin key (string) argument");
         return 0; }
@@ -111,7 +118,7 @@ get_library_for(PyObject *self, PyObject *args)
     
     PluginLoader *loader = PluginLoader::getInstance();
     string path = loader->getLibraryPathForPlugin(pluginKey);
-    PyObject *pyPath = PyString_FromString(path.c_str());
+    PyObject *pyPath = StringConversion().string2py(path.c_str());
     return pyPath;
 }
 
@@ -120,7 +127,13 @@ get_category_of(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
-    if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
                         "get_category_of() takes plugin key (string) argument");
         return 0; }
@@ -141,7 +154,13 @@ get_outputs_of(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
 
-    if (!PyArg_ParseTuple(args, "S", &pyPluginKey)) {
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "U",
+#else
+                          "S",
+#endif
+                          &pyPluginKey)) {
         PyErr_SetString(PyExc_TypeError,
                         "get_outputs_of() takes plugin key (string) argument");
         return 0; }
@@ -166,7 +185,7 @@ get_outputs_of(PyObject *self, PyObject *args)
 
     for (size_t i = 0; i < outputs.size(); ++i) {
         PyObject *pyOutputId =
-            PyString_FromString(outputs[i].identifier.c_str());
+            StringConversion().string2py(outputs[i].identifier.c_str());
         PyList_SET_ITEM(pyList, i, pyOutputId);
     }
 
@@ -178,9 +197,14 @@ load_plugin(PyObject *self, PyObject *args)
 {
     PyObject *pyPluginKey;
     float inputSampleRate;
-    int adapterFlags;
+    ssize_t adapterFlags;
 
-    if (!PyArg_ParseTuple(args, "Sfn",
+    if (!PyArg_ParseTuple(args,
+#if (PY_MAJOR_VERSION >= 3)
+                          "Ufn",
+#else
+                          "Sfn",
+#endif
                           &pyPluginKey,
                           &inputSampleRate,
                           &adapterFlags)) {
@@ -208,14 +232,14 @@ load_plugin(PyObject *self, PyObject *args)
 static PyObject *
 frame_to_realtime(PyObject *self, PyObject *args)
 {
-    int frame;
-    int rate;
+    ssize_t frame;
+    float rate;
 
-    if (!PyArg_ParseTuple(args, "nn",
+    if (!PyArg_ParseTuple(args, "nf",
                           &frame,
                           &rate)) {
         PyErr_SetString(PyExc_TypeError,
-                        "frame_to_realtime() takes frame (int) and sample rate (int) arguments");
+                        "frame_to_realtime() takes frame (int) and sample rate (float) arguments");
         return 0; }
 
     RealTime rt = RealTime::frame2RealTime(frame, rate);
@@ -249,14 +273,16 @@ static PyMethodDef vampyhost_methods[] = {
     {0, 0}              /* sentinel */
 };
 
-PyDoc_STRVAR(module_doc, "Load and run Vamp audio analysis plugins.");
-
 static int
 setint(PyObject *d, const char *name, int value)
 {
     PyObject *v;
     int err;
+#if (PY_MAJOR_VERSION >= 3)
+    v = PyLong_FromLong((long)value);
+#else
     v = PyInt_FromLong((long)value);
+#endif
     err = PyDict_SetItemString(d, name, v);
     Py_XDECREF(v);
     return err;
@@ -264,19 +290,49 @@ setint(PyObject *d, const char *name, int value)
 
 /* Initialization function for the module (*must* be called initxx) */
 
+#if (PY_MAJOR_VERSION >= 3)
+static struct PyModuleDef vampyhostdef = {
+    PyModuleDef_HEAD_INIT,
+    "vampyhost",
+    "Load and run Vamp audio analysis plugins.",
+    -1,
+    vampyhost_methods,
+    0, 0, 0, 0
+};
+#else
+PyDoc_STRVAR(module_doc, "Load and run Vamp audio analysis plugins.");
+#endif
+
 // module initialization (includes extern C {...} as necessary)
 PyMODINIT_FUNC
+#if (PY_MAJOR_VERSION >= 3)
+PyInit_vampyhost(void)
+#else
 initvampyhost(void)
+#endif
 {
     PyObject *m;
 
-    if (PyType_Ready(&RealTime_Type) < 0) return;
-    if (PyType_Ready(&Plugin_Type) < 0) return;
+#if (PY_MAJOR_VERSION >= 3)
+#define GOOD_RETURN m
+#define BAD_RETURN 0
+#else
+#define GOOD_RETURN
+#define BAD_RETURN
+#endif
+    
+    if (PyType_Ready(&RealTime_Type) < 0) return BAD_RETURN;
+    if (PyType_Ready(&Plugin_Type) < 0) return BAD_RETURN;
 
+#if (PY_MAJOR_VERSION >= 3)
+    m = PyModule_Create(&vampyhostdef);
+#else
     m = Py_InitModule3("vampyhost", vampyhost_methods, module_doc);
+#endif
+    
     if (!m) {
         cerr << "ERROR: initvampyhost: Failed to initialise module" << endl;
-        return;
+        return BAD_RETURN;
     }
 
     import_array();
@@ -288,7 +344,7 @@ initvampyhost(void)
     PyObject *dict = PyModule_GetDict(m);
     if (!dict) {
         cerr << "ERROR: initvampyhost: Failed to obtain module dictionary" << endl;
-        return;
+        return BAD_RETURN;
     }
 
     if (setint(dict, "ONE_SAMPLE_PER_STEP",
@@ -314,6 +370,8 @@ initvampyhost(void)
         setint(dict, "ADAPT_ALL",
                PluginLoader::ADAPT_ALL) < 0) {
         cerr << "ERROR: initvampyhost: Failed to add enums to module dictionary" << endl;
-        return;
+        return BAD_RETURN;
     }
+
+    return GOOD_RETURN;
 }

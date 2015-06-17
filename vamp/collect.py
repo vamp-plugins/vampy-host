@@ -1,9 +1,9 @@
 '''A high-level interface to the vampyhost extension module, for quickly and easily running Vamp audio analysis plugins on audio files and buffers.'''
 
 import vampyhost
-import load
-import process
-import frames
+import vamp.load
+import vamp.process
+import vamp.frames
 
 import numpy as np
 
@@ -124,7 +124,7 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
     vamp.process() instead.
     """
 
-    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
 
     if output == "":
         output_desc = plugin.get_output(0)
@@ -132,9 +132,9 @@ def collect(data, sample_rate, key, output = "", parameters = {}):
     else:
         output_desc = plugin.get_output(output)
 
-    ff = frames.frames_from_array(data, step_size, block_size)
+    ff = vamp.frames.frames_from_array(data, step_size, block_size)
 
-    results = process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
+    results = vamp.process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
 
     rv = reshape(results, sample_rate, step_size, output_desc)
 

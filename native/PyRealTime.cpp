@@ -182,10 +182,15 @@ static PyMethodDef RealTime_methods[] =
 
 /* Object Protocol */
 
+#if (PY_MAJOR_VERSION >= 3)
+#define PyInt_AS_LONG PyLong_AS_LONG
+#define PyInt_FromSsize_t PyLong_FromSsize_t
+#endif
+
 static int
 RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 {
-    if ( !string(name).compare("sec")) { 
+    if ( !string(name).compare("sec")) {
         self->rt->sec= (int) PyInt_AS_LONG(value);
         return 0;
     }
@@ -199,8 +204,15 @@ RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 }
 
 static PyObject *
-RealTime_getattr(RealTimeObject *self, char *name)
+RealTime_getattro(RealTimeObject *self, PyObject *nameobj)
 {
+    string name;
+#if PY_MAJOR_VERSION < 3
+    name = PyString_AsString(nameobj);
+#else
+    name = PyBytes_AsString(PyUnicode_AsUTF8String(nameobj));
+#endif
+        
     if ( !string(name).compare("sec") ) { 
         return PyInt_FromSsize_t(
             (Py_ssize_t) self->rt->sec); 
@@ -211,24 +223,35 @@ RealTime_getattr(RealTimeObject *self, char *name)
             (Py_ssize_t) self->rt->nsec); 
     } 
 
-    return Py_FindMethod(RealTime_methods, 
-                         (PyObject *)self, name);
+    return PyObject_GenericGetAttr((PyObject *)self, nameobj);
 }
 
-static int
-RealTime_compare(PyObject *self, PyObject *other)
+static PyObject *
+RealTime_richcompare(PyObject *self, PyObject *other, int op)
 {
     if (!PyRealTime_Check(self) || !PyRealTime_Check(other)) {
         PyErr_SetString(PyExc_TypeError, "RealTime Object Expected.");
-        return -1;
+        return Py_False;
     }
 
-    RealTime *rt1 = PyRealTime_AS_REALTIME(self);
-    RealTime *rt2 = PyRealTime_AS_REALTIME(other);
+    RealTime *a = PyRealTime_AS_REALTIME(self);
+    RealTime *b = PyRealTime_AS_REALTIME(other);
 
-    if (*rt1 == *rt2) return 0;
-    else if (*rt1 > *rt2) return 1;
-    else return -1;
+    if (op == Py_LT) {
+        return (a < b) ? Py_True : Py_False;
+    } else if (op == Py_LE) {
+        return (a <= b) ? Py_True : Py_False;
+    } else if (op == Py_EQ) {
+        return (a == b) ? Py_True : Py_False;
+    } else if (op == Py_NE) {
+        return (a != b) ? Py_True : Py_False;
+    } else if (op == Py_GT) {
+        return (a > b) ? Py_True : Py_False;
+    } else if (op == Py_GE) {
+        return (a >= b) ? Py_True : Py_False;
+    } else {
+        return Py_False;
+    }
 }
 
 /* String representation called by e.g. str(realtime), print realtime*/
@@ -269,10 +292,12 @@ RealTime_subtract(PyObject *s, PyObject *w)
 
 static PyNumberMethods realtime_as_number = 
 {
-    RealTime_add,                       /*nb_add*/
-    RealTime_subtract,          /*nb_subtract*/
+    (binaryfunc)RealTime_add,                       /*nb_add*/
+    (binaryfunc)RealTime_subtract,          /*nb_subtract*/
     0,                                          /*nb_multiply*/
+#if (PY_MAJOR_VERSION < 3)
     0,                                          /*nb_divide*/
+#endif
     0,                                          /*nb_remainder*/
     0,                      /*nb_divmod*/
     0,                          /*nb_power*/
@@ -286,12 +311,12 @@ static PyNumberMethods realtime_as_number =
     0,                                  /*nb_and*/
     0,                                  /*nb_xor*/
     0,                                  /*nb_or*/
+#if (PY_MAJOR_VERSION < 3)
     0,                      /*nb_coerce*/
+#endif
     0,                                          /*nb_int*/
     0,                                  /*nb_long*/
     (unaryfunc)RealTime_float,/*nb_float*/
-    0,                          /*nb_oct*/
-    0,                          /*nb_hex*/
 };
 
 /* REAL-TIME TYPE OBJECT */
@@ -302,17 +327,16 @@ static PyNumberMethods realtime_as_number =
 /* Doc:: 10.3 Type Objects */ /* static */ 
 PyTypeObject RealTime_Type = 
 {
-    PyObject_HEAD_INIT(NULL)
-    0,                          /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "vampy.RealTime",           /*tp_name*/
     sizeof(RealTimeObject),     /*tp_basicsize*/
     0,                          /*tp_itemsize*/
     /*          methods         */
     (destructor)RealTimeObject_dealloc, /*tp_dealloc*/
     0,                                  /*tp_print*/
-    (getattrfunc)RealTime_getattr, /*tp_getattr*/
+    0, /*tp_getattr*/
     (setattrfunc)RealTime_setattr, /*tp_setattr*/
-    (cmpfunc)RealTime_compare,     /*tp_compare*/
+    0,     /*tp_compare*/
     RealTime_repr,                 /*tp_repr*/
     &realtime_as_number,        /*tp_as_number*/
     0,                          /*tp_as_sequence*/
@@ -320,14 +344,14 @@ PyTypeObject RealTime_Type =
     0,                          /*tp_hash*/
     0,                      /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
+    (getattrofunc)RealTime_getattro,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     "RealTime object, used for Vamp plugin timestamps.",      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
+    (richcmpfunc)RealTime_richcompare,                      /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/

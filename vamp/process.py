@@ -1,8 +1,8 @@
 '''A high-level interface to the vampyhost extension module, for quickly and easily running Vamp audio analysis plugins on audio files and buffers.'''
 
 import vampyhost
-import frames
-import load
+import vamp.frames
+import vamp.load
 
 def process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs):
 
@@ -30,7 +30,7 @@ def process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs)
                 yield { o: r }
 
 
-def process(data, sample_rate, key, output = "", parameters = {}):
+def process_audio(data, sample_rate, key, output = "", parameters = {}):
     """Process audio data with a Vamp plugin, and make the results from a
     single plugin output available as a generator.
 
@@ -57,12 +57,12 @@ def process(data, sample_rate, key, output = "", parameters = {}):
     structure, consider using vamp.collect() instead.
     """
 
-    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
 
     if output == "":
         output = plugin.get_output(0)["identifier"]
 
-    ff = frames.frames_from_array(data, step_size, block_size)
+    ff = vamp.frames.frames_from_array(data, step_size, block_size)
 
     for r in process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output]):
         yield r[output]
@@ -164,9 +164,9 @@ def process_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
     array of float values.
     """
 
-    plugin, step_size, block_size = load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
 
-    ff = frames.frames_from_array(data, step_size, block_size)
+    ff = vamp.frames.frames_from_array(data, step_size, block_size)
 
     for r in process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs):
         yield r

@@ -2,7 +2,7 @@
 
 import vampyhost
 
-from load import list_plugins, get_outputs_of, get_category_of
-from process import process, process_frames, process_multiple_outputs, process_frames_multiple_outputs
-from collect import collect
+from vamp.load import list_plugins, get_outputs_of, get_category_of
+from vamp.process import process_audio, process_frames, process_multiple_outputs, process_frames_multiple_outputs
+from vamp.collect import collect
 

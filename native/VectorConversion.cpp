@@ -37,8 +37,9 @@
 
 #include <Python.h>
 
-#include "FloatConversion.h"
 #include "VectorConversion.h"
+#include "FloatConversion.h"
+#include "StringConversion.h"
 
 #include <math.h>
 #include <float.h>
@@ -237,7 +238,7 @@ VectorConversion::PyValue_From_StringVector(const vector<string> &v) const
 {
     PyObject *pyList = PyList_New(v.size());
     for (size_t i = 0; i < v.size(); ++i) {
-        PyObject *pyStr = PyString_FromString(v[i].c_str());
+        PyObject *pyStr = StringConversion().string2py(v[i].c_str());
         PyList_SET_ITEM(pyList, i, pyStr);
     }
     return pyList;
@@ -289,23 +290,20 @@ string
 VectorConversion::PyValue_Get_TypeName(PyObject* pyValue) const
 {
     PyObject *pyType = PyObject_Type(pyValue);
-    if (!pyType) 
-    {
+    if (!pyType) {
         cerr << "Warning: Object type name could not be found." << endl;
         if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
         return string ("< unknown type >");
     }
     PyObject *pyString = PyObject_Str(pyType);
-    if (!pyString)
-    {
+    if (!pyString) {
         cerr << "Warning: Object type name could not be found." << endl;
         if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
         Py_CLEAR(pyType);
         return string ("< unknown type >");
     }
-    char *cstr = PyString_AS_STRING(pyString);
-    if (!cstr)
-    {
+    string str = StringConversion().py2string(pyString);
+    if (str == "") {
         cerr << "Warning: Object type name could not be found." << endl;
         if (PyErr_Occurred()) {PyErr_Print(); PyErr_Clear();}
         Py_DECREF(pyType);
@@ -314,5 +312,5 @@ VectorConversion::PyValue_Get_TypeName(PyObject* pyValue) const
     }
     Py_DECREF(pyType);
     Py_DECREF(pyString);
-    return string(cstr);
+    return str;
 }
