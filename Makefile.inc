@@ -28,7 +28,7 @@ all:		$(LIBRARY) .tests
 		@touch $@
 
 .PHONY:		test
-test:		
+test:		$(LIBRARY) $(PY) $(TESTPLUG) $(TESTS)
 		VAMP_PATH=$(TESTPLUG_DIR) $(NOSE)
 
 $(LIBRARY):	$(OBJECTS)
