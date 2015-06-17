@@ -234,8 +234,12 @@ RealTime_richcompare(PyObject *self, PyObject *other, int op)
         return Py_False;
     }
 
-    RealTime *a = PyRealTime_AS_REALTIME(self);
-    RealTime *b = PyRealTime_AS_REALTIME(other);
+    RealTime *ap = PyRealTime_AS_REALTIME(self);
+    RealTime *bp = PyRealTime_AS_REALTIME(other);
+
+    if (!ap || !bp) return Py_False;
+    const RealTime &a = *ap;
+    const RealTime &b = *bp;
 
     if (op == Py_LT) {
         return (a < b) ? Py_True : Py_False;
@@ -395,7 +399,8 @@ PyRealTime_AsRealTime (PyObject *self) {
     if (!PyRealTime_Check(s)) {
         PyErr_SetString(PyExc_TypeError, "RealTime Object Expected.");
         cerr << "in call PyRealTime_AsPointer(): RealTime Object Expected. " << endl;
-        return NULL; }
+        return NULL;
+    }
     return s->rt; 
 };
 

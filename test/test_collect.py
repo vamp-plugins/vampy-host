@@ -62,6 +62,7 @@ def test_collect_variable_sample_rate():
     assert len(results) == 10
     i = 0
     for r in results:
+        print("timestamp = " + str(r["timestamp"]))
         assert r["timestamp"] == vamp.vampyhost.RealTime('seconds', i * 0.75)
         assert abs(r["values"][0] - i * 0.1) < eps
         i = i + 1
