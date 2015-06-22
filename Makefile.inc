@@ -5,19 +5,25 @@ CXX		?= g++
 CC		?= gcc
 
 SRC_DIR		:= native
+VAMP_DIR	:= vamp-plugin-sdk
 
 PLUGIN_EXT	?= $(LIBRARY_EXT)
 TESTPLUG_DIR	:= test/vamp-test-plugin
 TESTPLUG	:= $(TESTPLUG_DIR)/vamp-test-plugin$(PLUGIN_EXT)
 
 HEADERS		:= $(SRC_DIR)/PyPluginObject.h $(SRC_DIR)/PyRealTime.h $(SRC_DIR)/FloatConversion.h $(SRC_DIR)/VectorConversion.h
+
 SOURCES		:= $(SRC_DIR)/PyPluginObject.cpp $(SRC_DIR)/PyRealTime.cpp $(SRC_DIR)/VectorConversion.cpp $(SRC_DIR)/vampyhost.cpp
+
+VAMP_SOURCES	:= $(wildcard $(VAMP_DIR)/src/vamp-hostsdk/*.cpp)
 
 PY		:= $(wildcard vamp/*.py)
 TESTS		:= $(wildcard test/test_*.py)
 
-OBJECTS		:= $(SOURCES:.cpp=.o)
+OBJECTS		:= $(SOURCES:.cpp=.o) $(VAMP_SOURCES:.cpp=.o)
 OBJECTS		:= $(OBJECTS:.c=.o)
+
+CXXFLAGS	+= -I$(VAMP_DIR)
 
 default:	$(LIBRARY)
 
@@ -35,7 +41,7 @@ $(LIBRARY):	$(OBJECTS)
 		$(CXX) -o $@ $^ $(LDFLAGS)
 
 $(TESTPLUG):	
-		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) VAMPSDK_DIR=../../../vamp-plugin-sdk
+		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) VAMPSDK_DIR=../$(VAMP_DIR)
  
 clean:		
 		$(MAKE) -C $(TESTPLUG_DIR) -f Makefile$(MAKEFILE_EXT) clean

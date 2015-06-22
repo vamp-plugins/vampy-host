@@ -1,1 +1,2 @@
+vamp-plugin-sdk = https://code.soundsoftware.ac.uk/hg/vamp-plugin-sdk
 test/vamp-test-plugin = https://code.soundsoftware.ac.uk/hg/vamp-test-plugin

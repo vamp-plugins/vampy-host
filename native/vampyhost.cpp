@@ -60,6 +60,10 @@
 
 #include <cmath>
 
+#if (VAMP_SDK_MAJOR_VERSION != 2 || VAMP_SDK_MINOR_VERSION < 6)
+#error "Vamp plugin SDK v2, version 2.6 or newer required"
+#endif
+
 using namespace std;
 using namespace Vamp;
 using namespace Vamp::HostExt;
