@@ -13,6 +13,7 @@ srcfiles = [ sdkdir + f + '.cpp' for f in sdkfiles ] + [ vpydir + f + '.cpp' for
 
 vampyhost = Extension('vampyhost',
                       sources = srcfiles,
+                      define_macros = [ ('_USE_MATH_DEFINES', 1) ],
                       include_dirs = [ 'vamp-plugin-sdk', np.get_include() ])
 
 setup (name = 'vamp',
