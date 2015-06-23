@@ -1,4 +1,5 @@
 from distutils.core import setup, Extension
+import numpy as np
 
 sdkdir = 'vamp-plugin-sdk/src/vamp-hostsdk/'
 vpydir = 'native/'
@@ -12,7 +13,7 @@ srcfiles = [ sdkdir + f + '.cpp' for f in sdkfiles ] + [ vpydir + f + '.cpp' for
 
 vampyhost = Extension('vampyhost',
                       sources = srcfiles,
-                      include_dirs = [ 'vamp-plugin-sdk' ])
+                      include_dirs = [ 'vamp-plugin-sdk', np.get_include() ])
 
 setup (name = 'vamp',
        version = '1.0',

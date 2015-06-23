@@ -57,10 +57,10 @@ struct PyPluginObject
     PyObject *programs;
 };
 
-PyAPI_DATA(PyTypeObject) Plugin_Type;
+extern PyTypeObject Plugin_Type;
 #define PyPlugin_Check(v) PyObject_TypeCheck(v, &Plugin_Type)
 
-PyAPI_FUNC(PyObject *)
+extern PyObject *
 PyPluginObject_From_Plugin(Vamp::Plugin *);
 
 #endif
