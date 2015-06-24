@@ -59,7 +59,6 @@ file, and the NNLS Chroma Vamp plugin
 (https://code.soundsoftware.ac.uk/projects/nnls-chroma/) for
 analysis::
 
-    $ python
     >>> import vamp
     >>> import librosa
     >>> data, rate = librosa.load("example.wav")
