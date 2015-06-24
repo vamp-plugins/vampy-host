@@ -63,33 +63,43 @@ High-level interface (vamp)
 
 This module contains three sorts of function:
 
- * Lookup functions: ``list_plugins``, ``get_outputs_of``, ``get_category_of``
+ 1. Basic info and lookup functions:
 
-   These retrieve the installed plugin identifiers and get basic
-   information about each plugin. For more detailed information, load
-   a plugin and inspect it using the low-level interface described
-   below.
+   * ``vamp.list_plugins``
+   * ``vamp.get_outputs_of``
+   * ``vamp.get_category_of``
 
- * Process functions: ``process_audio``, ``process_frames``,
-   ``process_audio_multiple_outputs``, ``process_frames_multiple_outputs``
+   These retrieve the installed plugin keys and get basic information
+   about each plugin. (For more detailed information, load a plugin
+   and inspect it using the low-level interface described below.)
+
+ 2. Process functions:
+
+   * ``vamp.process_audio``
+   * ``vamp.process_frames``
+   * ``vamp.process_audio_multiple_outputs``
+   * ``vamp.process_frames_multiple_outputs``
 
    These accept audio input, and produce output in the form of a list
    of feature sets structured similarly to those in the C++ Vamp
-   plugin SDK. The plugin to be used is specified by its identifier. A
-   dictionary of plugin parameter settings may optionally be supplied.
+   plugin SDK. The plugin to be used is specified by its key (the
+   identifier as returned by ``vamp.list_plugins``). A dictionary of
+   plugin parameter settings may optionally be supplied.
 
    The ``_audio`` versions take a single (presumably long) array of
    audio samples as input, and chop it into frames according to the
    plugin's preferred step and block sizes. The ``_frames`` versions
    instead accept an enumerable sequence of audio frame arrays.
 
- * The process-and-collect function: ``collect``
+ 3. The process-and-collect function:
+
+   * ``vamp.collect``
 
    This accepts a single array of audio samples as input, and returns
    an output structure that reflects the underlying structure of the
    feature output (depending on whether it is a curve, grid, etc). The
-   plugin to be used is specified by its identifier. A dictionary of
-   plugin parameter settings may optionally be supplied.
+   plugin to be used is specified by its key. A dictionary of plugin
+   parameter settings may optionally be supplied.
 
    The ``collect`` function processes the whole input before returning
    anything; if you need to supply a streamed input, or retrieve

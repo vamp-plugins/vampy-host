@@ -59,7 +59,7 @@ def process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs)
                 yield { o: r }
 
 
-def process_audio(data, sample_rate, key, output = "", parameters = {}):
+def process_audio(data, sample_rate, plugin_key, output = "", parameters = {}):
     """Process audio data with a Vamp plugin, and make the results from a
     single plugin output available as a generator.
 
@@ -86,7 +86,7 @@ def process_audio(data, sample_rate, key, output = "", parameters = {}):
     structure, consider using vamp.collect() instead.
     """
 
-    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters)
 
     if output == "":
         output = plugin.get_output(0)["identifier"]
@@ -99,7 +99,7 @@ def process_audio(data, sample_rate, key, output = "", parameters = {}):
     plugin.unload()
 
 
-def process_frames(ff, sample_rate, step_size, key, output = "", parameters = {}):
+def process_frames(ff, sample_rate, step_size, plugin_key, output = "", parameters = {}):
     """Process audio data with a Vamp plugin, and make the results from a
     single plugin output available as a generator.
 
@@ -128,7 +128,7 @@ def process_frames(ff, sample_rate, step_size, key, output = "", parameters = {}
     If you would prefer to obtain all features in a single output
     structure, consider using vamp.collect() instead.
     """
-    plugin = vampyhost.load_plugin(key, sample_rate,
+    plugin = vampyhost.load_plugin(plugin_key, sample_rate,
                                    vampyhost.ADAPT_INPUT_DOMAIN +
                                    vampyhost.ADAPT_BUFFER_SIZE +
                                    vampyhost.ADAPT_CHANNEL_COUNT)
@@ -169,7 +169,7 @@ def process_frames(ff, sample_rate, step_size, key, output = "", parameters = {}
     plugin.unload()
     
 
-def process_audio_multiple_outputs(data, sample_rate, key, outputs, parameters = {}):
+def process_audio_multiple_outputs(data, sample_rate, plugin_key, outputs, parameters = {}):
     """Process audio data with a Vamp plugin, and make the results from a
     set of plugin outputs available as a generator.
 
@@ -193,7 +193,7 @@ def process_audio_multiple_outputs(data, sample_rate, key, outputs, parameters =
     array of float values.
     """
 
-    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters)
 
     ff = vamp.frames.frames_from_array(data, step_size, block_size)
 
@@ -203,7 +203,7 @@ def process_audio_multiple_outputs(data, sample_rate, key, outputs, parameters =
     plugin.unload()
 
 
-def process_frames_multiple_outputs(ff, sample_rate, step_size, key, outputs, parameters = {}):
+def process_frames_multiple_outputs(ff, sample_rate, step_size, plugin_key, outputs, parameters = {}):
     """Process audio data with a Vamp plugin, and make the results from a
     set of plugin outputs available as a generator.
 
@@ -229,7 +229,7 @@ def process_frames_multiple_outputs(ff, sample_rate, step_size, key, outputs, pa
     duration (RealTime objects), label (string), and a 1-dimensional
     array of float values.
     """
-    plugin = vampyhost.load_plugin(key, sample_rate,
+    plugin = vampyhost.load_plugin(plugin_key, sample_rate,
                                    vampyhost.ADAPT_INPUT_DOMAIN +
                                    vampyhost.ADAPT_BUFFER_SIZE +
                                    vampyhost.ADAPT_CHANNEL_COUNT)

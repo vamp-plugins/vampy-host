@@ -50,29 +50,29 @@ def list_plugins():
     """
     return vampyhost.list_plugins()
 
-def get_outputs_of(key):
+def get_outputs_of(plugin_key):
     """Obtain a list of the output identifiers for the given plugin key.
     """
-    return vampyhost.get_outputs_of(key)
+    return vampyhost.get_outputs_of(plugin_key)
 
-def get_category_of(key):
+def get_category_of(plugin_key):
     """Obtain the category descriptor, if any, for the given plugin key.
 
     The returned value is a list of descriptor terms, from least
     specific to most specific. The list may be empty if no category
     information is found for the plugin.
     """
-    return vampyhost.get_category_of(key)
+    return vampyhost.get_category_of(plugin_key)
 
-def load_and_configure(data, sample_rate, key, parameters):
-    """Load the plugin with the given key at a given sample rate,
+def load_and_configure(data, sample_rate, plugin_key, parameters):
+    """Load the plugin with the given plugin key, at a given sample rate,
     configure it with the parameter keys and values in the given
     parameter dictionary, and initialise it with its preferred step
     and block size. The channel count is taken from the shape of the
     data array provided.
     """
 
-    plug = vampyhost.load_plugin(key, sample_rate,
+    plug = vampyhost.load_plugin(plugin_key, sample_rate,
                                  vampyhost.ADAPT_INPUT_DOMAIN +
                                  vampyhost.ADAPT_CHANNEL_COUNT)
 
