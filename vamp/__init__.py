@@ -27,7 +27,9 @@
 #   used in advertising or otherwise to promote the sale, use or other
 #   dealings in this Software without prior written authorization.
 
-'''A high-level interface to the vampyhost extension module, for quickly and easily running Vamp audio analysis plugins on audio files and buffers.'''
+'''Load and use Vamp plugins for audio feature analysis. This module
+is a high-level interface to the vampyhost extension, for quickly and
+easily running Vamp analysis plugins on buffers of audio data.'''
 
 import vampyhost
 

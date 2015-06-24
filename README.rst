@@ -12,6 +12,13 @@ low-level wrapper for the Vamp plugin SDK, along with a Python module
 No code for loading audio files etc is included; you'll need to use
 some other module for that.
 
+Written by Chris Cannam and George Fazekas at the Centre for Digital
+Music, Queen Mary University of London. Copyright 2008-2015 Queen
+Mary, University of London. Refer to COPYING.rst for licence details.
+
+See home page at https://code.soundsoftware.ac.uk/projects/vampy-host
+for more details.
+
 
 High-level interface (vamp)
 ---------------------------
@@ -73,32 +80,32 @@ A simple example
 
 Using librosa (http://bmcfee.github.io/librosa/) for audio file I/O,
 and the NNLS Chroma Vamp plugin
-(https://code.soundsoftware.ac.uk/projects/nnls-chroma/)
+(https://code.soundsoftware.ac.uk/projects/nnls-chroma/)::
 
-$ python
->>> import vamp
->>> import librosa
->>> data, rate = librosa.load("example.wav")
->>> collected = vamp.collect(data, rate, "nnls-chroma:nnls-chroma")
->>> collected
-{'matrix': ( 0.092879819, array([[  61.0532608 ,   60.27478409,   59.3938446 , ...,  182.13394165,
-          42.40084457,  116.55457306],
-       [  68.8901825 ,   63.98115921,   60.77633667, ...,  245.88218689,
-          68.51251984,  164.70120239],
-       [  58.59794617,   50.3429184 ,   45.44804764, ...,  258.02362061,
-          83.95749664,  179.91200256],
-       ..., 
-       [   0.        ,    0.        ,    0.        , ...,    0.        ,
-           0.        ,    0.        ],
-       [   0.        ,    0.        ,    0.        , ...,    0.        ,
-           0.        ,    0.        ],
-       [   0.        ,    0.        ,    0.        , ...,    0.        ,
-           0.        ,    0.        ]], dtype=float32))}
->>> stepsize, chromadata = collected["matrix"]
->>> import matplotlib.pyplot as plt
->>> plt.imshow(chromadata)
-<matplotlib.image.AxesImage object at 0x7fe9e0043fd0>
->>> plt.show()
+    $ python
+    >>> import vamp
+    >>> import librosa
+    >>> data, rate = librosa.load("example.wav")
+    >>> collected = vamp.collect(data, rate, "nnls-chroma:nnls-chroma")
+    >>> collected
+    {'matrix': ( 0.092879819, array([[  61.0532608 ,   60.27478409,   59.3938446 , ...,  182.13394165,
+              42.40084457,  116.55457306],
+           [  68.8901825 ,   63.98115921,   60.77633667, ...,  245.88218689,
+              68.51251984,  164.70120239],
+           [  58.59794617,   50.3429184 ,   45.44804764, ...,  258.02362061,
+              83.95749664,  179.91200256],
+           ..., 
+           [   0.        ,    0.        ,    0.        , ...,    0.        ,
+               0.        ,    0.        ],
+           [   0.        ,    0.        ,    0.        , ...,    0.        ,
+               0.        ,    0.        ],
+           [   0.        ,    0.        ,    0.        , ...,    0.        ,
+               0.        ,    0.        ]], dtype=float32))}
+    >>> stepsize, chromadata = collected["matrix"]
+    >>> import matplotlib.pyplot as plt
+    >>> plt.imshow(chromadata)
+    <matplotlib.image.AxesImage object at 0x7fe9e0043fd0>
+    >>> plt.show()
 
 And a pitch-chroma plot appears (though it's rotated 90 degrees
 compared with its more usual orientation).

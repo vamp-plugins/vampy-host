@@ -1,0 +1,3 @@
+include README.rst COPYING.rst
+recursive-include native *.cpp *.h
+recursive-include vamp-plugin-sdk *.cpp *.h

@@ -8,3 +8,6 @@ syntax: glob
 *.bak
 *.orig
 .tests
+vamp.egg-info
+build
+dist
