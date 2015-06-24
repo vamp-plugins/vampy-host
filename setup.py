@@ -26,7 +26,7 @@ vampyhost = Extension('vampyhost',
                       include_dirs = [ 'vamp-plugin-sdk', np.get_include() ])
 
 setup (name = 'vamp',
-       version = '1.0.0',
+       version = '1.0.1',
        url = 'https://code.soundsoftware.ac.uk/projects/vampy-host',
        description = 'Use Vamp plugins for audio feature analysis.',
        long_description = ( read('README.rst') + '\n\n' + read('COPYING.rst') ),
