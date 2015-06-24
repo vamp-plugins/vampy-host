@@ -18,10 +18,10 @@ ARCHFLAGS ?= -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
 
 # Compile flags
 #
-CFLAGS          += $(ARCHFLAGS) -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH) -I../vamp-plugin-sdk
-CXXFLAGS        += $(ARCHFLAGS) -O2 -Wall -I. -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH) -I../vamp-plugin-sdk
+CFLAGS          += $(ARCHFLAGS) -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH)
+CXXFLAGS        += $(ARCHFLAGS) -O2 -Wall -I. -fPIC -I$(PY_INCLUDE_PATH) -I$(NUMPY_INCLUDE_PATH) 
 
-LDFLAGS 		:= -dynamiclib -L../vamp-plugin-sdk -lvamp-hostsdk -l$(PY_LIB) -ldl
+LDFLAGS 		:= -dynamiclib -l$(PY_LIB) -ldl
 
 NOSE			:= $(PY_TEST)
 
