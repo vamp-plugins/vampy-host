@@ -92,7 +92,8 @@ High-level interface (vamp)
 
 This module contains three sorts of function:
 
- 1. Basic info and lookup functions:
+1. Basic info and lookup functions
+""""""""""""""""""""""""""""""""""
 
    * ``vamp.list_plugins``
    * ``vamp.get_outputs_of``
@@ -102,7 +103,8 @@ This module contains three sorts of function:
    about each plugin. (For more detailed information, load a plugin
    and inspect it using the low-level interface described below.)
 
- 2. Process functions:
+2. Process functions
+""""""""""""""""""""
 
    * ``vamp.process_audio``
    * ``vamp.process_frames``
@@ -120,8 +122,9 @@ This module contains three sorts of function:
    plugin's preferred step and block sizes. The ``_frames`` versions
    instead accept an enumerable sequence of audio frame arrays.
 
- 3. The process-and-collect function:
-
+3. The process-and-collect function
+"""""""""""""""""""""""""""""""""""
+   
    * ``vamp.collect``
 
    This accepts a single array of audio samples as input, and returns
