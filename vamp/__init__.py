@@ -28,8 +28,11 @@
 #   dealings in this Software without prior written authorization.
 
 '''Load and use Vamp plugins for audio feature analysis. This module
-is a high-level interface to the vampyhost extension, for quickly and
-easily running Vamp analysis plugins on buffers of audio data.'''
+is a high-level interface wrapper around a native-code extension, for
+quickly and easily running Vamp analysis plugins on buffers of audio
+data. For low-level plugin loading and manipulation, refer to the
+vamp.vampyhost namespace which contains the native-code extension.
+'''
 
 import vampyhost
 

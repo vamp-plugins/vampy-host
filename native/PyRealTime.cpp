@@ -42,36 +42,58 @@
 using namespace std;
 using namespace Vamp;
 
+#if (PY_MAJOR_VERSION >= 3)
+#define PyInt_AS_LONG PyLong_AS_LONG
+#define PyInt_FromSsize_t PyLong_FromSsize_t
+#endif
+
 /* CONSTRUCTOR: New RealTime object from sec and nsec */
 static PyObject*
 RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
 {
-    unsigned int sec = 0;
-    unsigned int nsec = 0;
+    int sec = 0;
+    int nsec = 0;
+    int unaryInt = 0;
     double unary = 0;
     const char *fmt = NULL;
 
-    if (
-        /// new RealTime from ('format',float) e.g. ('seconds',2.34123)   
-        !PyArg_ParseTuple(args, "|sd:RealTime.new ", 
-                          (const char *) &fmt, 
-                          (double *) &unary)    &&
+    if (!PyArg_ParseTuple(args, ":RealTime.new ")) { // zero time
 
-        /// new RealTime from (sec{int},nsec{int}) e.g. (2,34)
-        !PyArg_ParseTuple(args, "|II:RealTime.new ", 
-                          (unsigned int*) &sec, 
-                          (unsigned int*) &nsec) 
-                
-        ) { 
-        PyErr_SetString(PyExc_TypeError, 
-                        "RealTime constructor requires either (sec,nsec) integer tuple, or ('format',float) where 'format' is 'seconds' or 'milliseconds'");
-        return NULL; 
+        PyErr_Clear();
+    
+        /// new RealTime from exact ('format',int) e.g. ('milliseconds',200)
+        if (!PyArg_ParseTuple(args, "si:RealTime.new ", 
+                              (const char *) &fmt, 
+                              (int *) &unaryInt)) {
+
+            PyErr_Clear();
+
+            /// new RealTime from ('format',float) e.g. ('seconds',2.34123)   
+            if (!PyArg_ParseTuple(args, "sd:RealTime.new ", 
+                                  (const char *) &fmt, 
+                                  (double *) &unary)) {
+
+                PyErr_Clear();
+
+                /// new RealTime from (sec{int},nsec{int}) e.g. (2,34)
+                if (!PyArg_ParseTuple(args, "ii:RealTime.new ", 
+                                      (int*) &sec, 
+                                      (int*) &nsec)) {
+
+                    PyErr_SetString(PyExc_TypeError, 
+                                    "RealTime constructor requires either (sec,nsec) integer tuple, or ('format',float) where 'format' is 'seconds' or 'milliseconds'");
+                    return NULL;
+                }
+            }
+        }
     }
 
     PyErr_Clear();
 
-    // RealTimeObject *self = PyObject_New(RealTimeObject, &RealTime_Type); 
-    RealTimeObject *self = (RealTimeObject*)type->tp_alloc(type, 0);
+    // Using PyObject_New because we use PyObject_Del to delete in the
+    // destructor
+    RealTimeObject *self = PyObject_New(RealTimeObject, &RealTime_Type);
+    PyObject_Init((PyObject *)self, &RealTime_Type);
         
     if (self == NULL) return NULL;
 
@@ -84,13 +106,22 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
     else { 
         /// new RealTime from seconds or milliseconds: i.e. >>>RealTime('seconds',12.3)
         if (!string(fmt).compare("float") ||
-            !string(fmt).compare("seconds"))  
-            self->rt = new RealTime( 
-                RealTime::fromSeconds((double) unary)); 
+            !string(fmt).compare("seconds")) {
 
-        if (!string(fmt).compare("milliseconds")) {
-            self->rt = new RealTime( 
-                RealTime::fromSeconds((double) unary / 1000.0)); }
+            if (unaryInt != 0) {
+                self->rt = new RealTime(RealTime::fromMilliseconds(unaryInt * 1000));
+            } else {
+                self->rt = new RealTime(RealTime::fromSeconds(unary));
+            }
+            
+        } else if (!string(fmt).compare("milliseconds")) {
+            
+            if (unaryInt != 0) {
+                self->rt = new RealTime(RealTime::fromMilliseconds(unaryInt));
+            } else {
+                self->rt = new RealTime(RealTime::fromSeconds(unary / 1000.0));
+            }
+        }
     }
 
     if (!self->rt) { 
@@ -106,10 +137,12 @@ RealTime_new(PyTypeObject *type, PyObject *args, PyObject *kw)
 static void
 RealTimeObject_dealloc(RealTimeObject *self)
 {
-    if (self->rt) delete self->rt;      //delete the C object
-    PyObject_Del(self); //delete the Python object (original)
-    /// this requires PyType_Ready() which fills ob_type
-    // self->ob_type->tp_free((PyObject*)self); 
+    delete self->rt;      // delete the C object
+
+    // "If the type is not subtypable (doesn’t have the
+    // Py_TPFLAGS_BASETYPE flag bit set), it is permissible to call
+    // the object deallocator directly instead of via tp_free"
+    PyObject_Del(self); // delete the Python object (original)
 }
 
 /* RealTime Object's Methods */ 
@@ -161,10 +194,10 @@ RealTime_float(PyObject *s)
 /* Type object's (RealTime) methods table */
 static PyMethodDef RealTime_methods[] = 
 {
-    {"values",  (PyCFunction)RealTime_values,   METH_NOARGS,
+    {"values", (PyCFunction)RealTime_values,   METH_NOARGS,
      PyDoc_STR("values() -> Tuple of sec,nsec representation.")},
 
-    {"to_string",        (PyCFunction)RealTime_toString, METH_NOARGS,
+    {"to_string", (PyCFunction)RealTime_toString, METH_NOARGS,
      PyDoc_STR("to_string() -> Return a user-readable string to the nearest millisecond in a form like HH:MM:SS.mmm")},
 
     {"to_frame", (PyCFunction)RealTime_toFrame,  METH_VARARGS,
@@ -182,21 +215,16 @@ static PyMethodDef RealTime_methods[] =
 
 /* Object Protocol */
 
-#if (PY_MAJOR_VERSION >= 3)
-#define PyInt_AS_LONG PyLong_AS_LONG
-#define PyInt_FromSsize_t PyLong_FromSsize_t
-#endif
-
 static int
 RealTime_setattr(RealTimeObject *self, char *name, PyObject *value)
 {
-    if ( !string(name).compare("sec")) {
-        self->rt->sec= (int) PyInt_AS_LONG(value);
+    if (!string(name).compare("sec")) {
+        self->rt->sec = (int) PyInt_AS_LONG(value);
         return 0;
     }
 
-    if ( !string(name).compare("nsec")) { 
-        self->rt->nsec= (int) PyInt_AS_LONG(value);
+    if (!string(name).compare("nsec")) { 
+        self->rt->nsec = (int) PyInt_AS_LONG(value);
         return 0;
     }
 
@@ -279,9 +307,9 @@ RealTime_repr(PyObject *self)
 static PyObject *
 RealTime_add(PyObject *s, PyObject *w)
 {
-    RealTimeObject *result = 
-        PyObject_New(RealTimeObject, &RealTime_Type); 
+    RealTimeObject *result = PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
+    PyObject_Init((PyObject *)result, &RealTime_Type);
 
     result->rt = new RealTime(
         *((RealTimeObject*)s)->rt + *((RealTimeObject*)w)->rt);
@@ -291,9 +319,9 @@ RealTime_add(PyObject *s, PyObject *w)
 static PyObject *
 RealTime_subtract(PyObject *s, PyObject *w)
 {
-    RealTimeObject *result = 
-        PyObject_New(RealTimeObject, &RealTime_Type); 
+    RealTimeObject *result = PyObject_New(RealTimeObject, &RealTime_Type); 
     if (result == NULL) return NULL;
+    PyObject_Init((PyObject *)result, &RealTime_Type);
 
     result->rt = new RealTime(
         *((RealTimeObject*)s)->rt - *((RealTimeObject*)w)->rt);
@@ -331,14 +359,11 @@ static PyNumberMethods realtime_as_number =
 
 /* REAL-TIME TYPE OBJECT */
 
-#define RealTime_alloc PyType_GenericAlloc
-#define RealTime_free PyObject_Del
-
 /* Doc:: 10.3 Type Objects */ /* static */ 
 PyTypeObject RealTime_Type = 
 {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "vampy.RealTime",           /*tp_name*/
+    "vampyhost.RealTime",           /*tp_name*/
     sizeof(RealTimeObject),     /*tp_basicsize*/
     0,                          /*tp_itemsize*/
     /*          methods         */
@@ -374,9 +399,9 @@ PyTypeObject RealTime_Type =
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
     0,                      /*tp_init*/
-    RealTime_alloc,         /*tp_alloc*/
+    0,                      /*tp_alloc*/
     RealTime_new,           /*tp_new*/
-    RealTime_free,          /*tp_free*/
+    0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 

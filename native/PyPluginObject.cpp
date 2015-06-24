@@ -82,8 +82,9 @@ getPluginObject(PyObject *pyPluginHandle)
 PyObject *
 PyPluginObject_From_Plugin(Plugin *plugin)
 {
-    PyPluginObject *pd = 
-        (PyPluginObject *)PyType_GenericAlloc(&Plugin_Type, 0);
+    PyPluginObject *pd = PyObject_New(PyPluginObject, &Plugin_Type);
+    if (!pd) return 0;
+    
     pd->plugin = plugin;
     pd->isInitialised = false;
     pd->channels = 0;
@@ -821,9 +822,9 @@ PyTypeObject Plugin_Type =
     0,                                  /*tp_descr_set*/
     0,                                  /*tp_dictoffset*/
     0,                                  /*tp_init*/
-    PyType_GenericAlloc,                /*tp_alloc*/
+    0,                                  /*tp_alloc*/
     0,                                  /*tp_new*/
-    PyObject_Del,                       /*tp_free*/
+    0,                                  /*tp_free*/
     0,                                  /*tp_is_gc*/
 };
 
