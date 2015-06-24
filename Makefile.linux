@@ -14,8 +14,7 @@ CFLAGS 			:= -O2 -Wall -Werror -fno-strict-aliasing -fPIC \
 
 CXXFLAGS 		:= $(CFLAGS)
 
-LDFLAGS 		:= -shared -Wl,-Bstatic -lvamp-hostsdk -Wl,-Bdynamic \
-			   -Wl,-z,defs -l$(PY_LIB) -ldl
+LDFLAGS 		:= -shared -Wl,-z,defs -l$(PY_LIB) -ldl
 
 NOSE			:= $(PY_TEST)
 
