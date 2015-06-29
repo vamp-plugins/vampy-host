@@ -179,7 +179,7 @@ get_outputs_of(PyObject *self, PyObject *args)
     Plugin *plugin = loader->loadPlugin(pluginKey, 48000, 0);
     if (!plugin) {
         string pyerr("Failed to load plugin: "); pyerr += pluginKey;
-        PyErr_SetString(PyExc_TypeError,pyerr.c_str());
+        PyErr_SetString(PyExc_TypeError, pyerr.c_str());
         return 0;
     }
 

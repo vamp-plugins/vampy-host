@@ -152,14 +152,14 @@ RealTimeObject_dealloc(RealTimeObject *self)
 static PyObject *
 RealTime_values(RealTimeObject *self)
 {
-    return Py_BuildValue("(ii)",self->rt->sec,self->rt->nsec);
+    return Py_BuildValue("(ii)", self->rt->sec, self->rt->nsec);
 }
 
 /* Returns a Text representation */
 static PyObject *
 RealTime_toString(RealTimeObject *self, PyObject *args)
 {
-    return Py_BuildValue("s",self->rt->toText().c_str());
+    return Py_BuildValue("s", self->rt->toText().c_str());
 }
 
 /* Frame representation */
@@ -168,8 +168,8 @@ RealTime_toFrame(PyObject *self, PyObject *args)
 {
     unsigned int samplerate;
         
-    if ( !PyArg_ParseTuple(args, "I:realtime.toFrame object ", 
-                           (unsigned int *) &samplerate )) {
+    if (!PyArg_ParseTuple(args, "I:realtime.toFrame object ", 
+                          (unsigned int *) &samplerate)) {
         PyErr_SetString(PyExc_ValueError,"Integer Sample Rate Required.");
         return NULL;
     }
@@ -289,6 +289,7 @@ RealTime_richcompare(PyObject *self, PyObject *other, int op)
 
 //    cerr << "returning: " << (result == Py_True ? "true" : "false") << endl;
 
+    Py_INCREF(result);
     return result;
 }
 

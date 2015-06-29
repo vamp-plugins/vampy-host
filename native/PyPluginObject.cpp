@@ -79,6 +79,43 @@ getPluginObject(PyObject *pyPluginHandle)
     }
 }
 
+static int
+setint(PyObject *d, const char *name, int value)
+{
+    PyObject *v;
+    int err;
+#if (PY_MAJOR_VERSION >= 3)
+    v = PyLong_FromLong((long)value);
+#else
+    v = PyInt_FromLong((long)value);
+#endif
+    err = PyDict_SetItemString(d, name, v);
+    Py_XDECREF(v);
+    return err;
+}
+
+static int
+setfloat(PyObject *d, const char *name, double value)
+{
+    PyObject *v;
+    int err;
+    v = PyFloat_FromDouble(value);
+    err = PyDict_SetItemString(d, name, v);
+    Py_XDECREF(v);
+    return err;
+}
+
+static int
+setstring(PyObject *d, const char *name, string value)
+{
+    PyObject *v;
+    int err;
+    v = StringConversion().string2py(value);
+    err = PyDict_SetItemString(d, name, v);
+    Py_XDECREF(v);
+    return err;
+}
+
 PyObject *
 PyPluginObject_From_Plugin(Plugin *plugin)
 {
@@ -90,24 +127,20 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     pd->channels = 0;
     pd->blockSize = 0;
     pd->stepSize = 0;
+    pd->info = 0;
+    pd->parameters = 0;
+    pd->programs = 0;
 
     StringConversion strconv;
     
     PyObject *infodict = PyDict_New();
-    PyDict_SetItemString
-        (infodict, "apiVersion", PyLong_FromLong(plugin->getVampApiVersion()));
-    PyDict_SetItemString
-        (infodict, "pluginVersion", PyLong_FromLong(plugin->getPluginVersion()));
-    PyDict_SetItemString
-        (infodict, "identifier", strconv.string2py(plugin->getIdentifier()));
-    PyDict_SetItemString
-        (infodict, "name", strconv.string2py(plugin->getName()));
-    PyDict_SetItemString
-        (infodict, "description", strconv.string2py(plugin->getDescription()));
-    PyDict_SetItemString
-        (infodict, "maker", strconv.string2py(plugin->getMaker()));
-    PyDict_SetItemString
-        (infodict, "copyright", strconv.string2py(plugin->getCopyright()));
+    setint(infodict, "apiVersion", plugin->getVampApiVersion());
+    setint(infodict, "pluginVersion", plugin->getPluginVersion());
+    setstring(infodict, "identifier", plugin->getIdentifier());
+    setstring(infodict, "name", plugin->getName());
+    setstring(infodict, "description", plugin->getDescription());
+    setstring(infodict, "maker", plugin->getMaker());
+    setstring(infodict, "copyright", plugin->getCopyright());
     pd->info = infodict;
 
     pd->inputDomain = plugin->getInputDomain();
@@ -119,32 +152,23 @@ PyPluginObject_From_Plugin(Plugin *plugin)
     
     for (int i = 0; i < (int)pl.size(); ++i) {
         PyObject *paramdict = PyDict_New();
-        PyDict_SetItemString
-            (paramdict, "identifier", strconv.string2py(pl[i].identifier));
-        PyDict_SetItemString
-            (paramdict, "name", strconv.string2py(pl[i].name));
-        PyDict_SetItemString
-            (paramdict, "description", strconv.string2py(pl[i].description));
-        PyDict_SetItemString
-            (paramdict, "unit", strconv.string2py(pl[i].unit));
-        PyDict_SetItemString
-            (paramdict, "minValue", PyFloat_FromDouble(pl[i].minValue));
-        PyDict_SetItemString
-            (paramdict, "maxValue", PyFloat_FromDouble(pl[i].maxValue));
-        PyDict_SetItemString
-            (paramdict, "defaultValue", PyFloat_FromDouble(pl[i].defaultValue));
+        setstring(paramdict, "identifier", pl[i].identifier);
+        setstring(paramdict, "name", pl[i].name);
+        setstring(paramdict, "description", pl[i].description);
+        setstring(paramdict, "unit", pl[i].unit);
+        setfloat(paramdict, "minValue", pl[i].minValue);
+        setfloat(paramdict, "maxValue", pl[i].maxValue);
+        setfloat(paramdict, "defaultValue", pl[i].defaultValue);
         if (pl[i].isQuantized) {
-            PyDict_SetItemString
-                (paramdict, "isQuantized", Py_True);
-            PyDict_SetItemString
-                (paramdict, "quantizeStep", PyFloat_FromDouble(pl[i].quantizeStep));
+            PyDict_SetItemString(paramdict, "isQuantized", Py_True);
+            setfloat(paramdict, "quantizeStep", pl[i].quantizeStep);
             if (!pl[i].valueNames.empty()) {
-                PyDict_SetItemString
-                    (paramdict, "valueNames", conv.PyValue_From_StringVector(pl[i].valueNames));
+                PyObject *vv = conv.PyValue_From_StringVector(pl[i].valueNames);
+                PyDict_SetItemString(paramdict, "valueNames", vv);
+                Py_DECREF(vv);
             }
         } else {
-            PyDict_SetItemString
-                (paramdict, "isQuantized", Py_False);
+            PyDict_SetItemString(paramdict, "isQuantized", Py_False);
         }
         
         PyList_SET_ITEM(params, i, paramdict);
@@ -170,6 +194,9 @@ PyPluginObject_dealloc(PyPluginObject *self)
 //    cerr << "PyPluginObject_dealloc: plugin object " << self << ", plugin " << self->plugin << endl;
 
     delete self->plugin;
+    Py_XDECREF(self->info);
+    Py_XDECREF(self->parameters);
+    Py_XDECREF(self->programs);
     PyObject_Del(self);
 }
 
@@ -180,55 +207,42 @@ convertOutput(const Plugin::OutputDescriptor &desc, int ix)
     StringConversion strconv;
     
     PyObject *outdict = PyDict_New();
-    PyDict_SetItemString
-        (outdict, "identifier", strconv.string2py(desc.identifier));
-    PyDict_SetItemString
-        (outdict, "name", strconv.string2py(desc.name));
-    PyDict_SetItemString
-        (outdict, "description", strconv.string2py(desc.description));
-    PyDict_SetItemString
-        (outdict, "unit", strconv.string2py(desc.unit));
-    PyDict_SetItemString
-        (outdict, "hasFixedBinCount", PyLong_FromLong(desc.hasFixedBinCount));
+    setstring(outdict, "identifier", desc.identifier);
+    setstring(outdict, "name", desc.name);
+    setstring(outdict, "description", desc.description);
+    setstring(outdict, "unit", desc.unit);
     if (desc.hasFixedBinCount) {
-        PyDict_SetItemString
-            (outdict, "binCount", PyLong_FromLong(desc.binCount));
+        PyDict_SetItemString(outdict, "hasFixedBinCount", Py_True);
+        setint(outdict, "binCount", desc.binCount);
         if (!desc.binNames.empty()) {
-            PyDict_SetItemString
-                (outdict, "binNames", conv.PyValue_From_StringVector(desc.binNames));
+            PyObject *vv = conv.PyValue_From_StringVector(desc.binNames);
+            PyDict_SetItemString(outdict, "binNames", vv);
+            Py_DECREF(vv);
         }
+    } else {
+        PyDict_SetItemString(outdict, "hasFixedBinCount", Py_False);
     }
     if (!desc.hasFixedBinCount ||
         (desc.hasFixedBinCount && (desc.binCount > 0))) {
         if (desc.hasKnownExtents) {
-            PyDict_SetItemString
-                (outdict, "hasKnownExtents", Py_True);
-            PyDict_SetItemString
-                (outdict, "minValue", PyFloat_FromDouble(desc.minValue));
-            PyDict_SetItemString
-                (outdict, "maxValue", PyFloat_FromDouble(desc.maxValue));
+            PyDict_SetItemString(outdict, "hasKnownExtents", Py_True);
+            setfloat(outdict, "minValue", desc.minValue);
+            setfloat(outdict, "maxValue", desc.maxValue);
         } else {
-            PyDict_SetItemString
-                (outdict, "hasKnownExtents", Py_False);
+            PyDict_SetItemString(outdict, "hasKnownExtents", Py_False);
         }
         if (desc.isQuantized) {
-            PyDict_SetItemString
-                (outdict, "isQuantized", Py_True);
-            PyDict_SetItemString
-                (outdict, "quantizeStep", PyFloat_FromDouble(desc.quantizeStep));
+            PyDict_SetItemString(outdict, "isQuantized", Py_True);
+            setfloat(outdict, "quantizeStep", desc.quantizeStep);
         } else {
-            PyDict_SetItemString
-                (outdict, "isQuantized", Py_False);
+            PyDict_SetItemString(outdict, "isQuantized", Py_False);
         }
     }
-    PyDict_SetItemString
-        (outdict, "sampleType", PyLong_FromLong((int)desc.sampleType));
-    PyDict_SetItemString
-        (outdict, "sampleRate", PyFloat_FromDouble(desc.sampleRate));
+    setint(outdict, "sampleType", (int)desc.sampleType);
+    setfloat(outdict, "sampleRate", desc.sampleRate);
     PyDict_SetItemString
         (outdict, "hasDuration", desc.hasDuration ? Py_True : Py_False);
-    PyDict_SetItemString
-        (outdict, "output_index", PyLong_FromLong(ix));
+    setint(outdict, "output_index", ix);
     return outdict;
 }
 
@@ -324,7 +338,7 @@ initialise(PyObject *self, PyObject *args)
 
     pd->isInitialised = true;
 
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static PyObject *
@@ -333,14 +347,14 @@ reset(PyObject *self, PyObject *)
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
 
-    if (!pd->isInitialised) {
+    if (!pd->isInitialised || !pd->plugin) {
         PyErr_SetString(PyExc_Exception,
                         "Plugin has not been initialised");
         return 0;
     }
         
     pd->plugin->reset();
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static bool
@@ -419,7 +433,7 @@ set_parameter_value(PyObject *self, PyObject *args)
     }
 
     pd->plugin->setParameter(param, value);
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static PyObject *
@@ -430,12 +444,14 @@ set_parameter_values(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O", &dict)) {
         PyErr_SetString(PyExc_TypeError,
                         "set_parameter_values() takes dict argument");
-        return 0; }
+        return 0;
+    }
 
     if (!PyDict_Check(dict)) {
         PyErr_SetString(PyExc_TypeError,
                         "set_parameter_values() takes dict argument");
-        return 0; }
+        return 0;
+    }
     
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -472,8 +488,8 @@ set_parameter_values(PyObject *self, PyObject *args)
         }
         pd->plugin->setParameter(param, FloatConversion::convert(value));
     }
-    
-    return Py_True;
+
+    Py_RETURN_TRUE;
 }
 
 static PyObject *
@@ -490,7 +506,8 @@ select_program(PyObject *self, PyObject *args)
                           &pyParam)) {
         PyErr_SetString(PyExc_TypeError,
                         "select_program() takes parameter id (string) argument");
-        return 0; }
+        return 0;
+    }
 
     PyPluginObject *pd = getPluginObject(self);
     if (!pd) return 0;
@@ -498,7 +515,7 @@ select_program(PyObject *self, PyObject *args)
     StringConversion strconv;
     
     pd->plugin->selectProgram(strconv.py2string(pyParam));
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static
@@ -525,22 +542,24 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
                 PyObject *pyF = PyDict_New();
 
                 if (f.hasTimestamp) {
-                    PyDict_SetItemString
-                        (pyF, "timestamp", PyRealTime_FromRealTime(f.timestamp));
+                    PyObject *rt = PyRealTime_FromRealTime(f.timestamp);
+                    PyDict_SetItemString(pyF, "timestamp", rt);
+                    Py_DECREF(rt);
                 }
                 if (f.hasDuration) {
-                    PyDict_SetItemString
-                        (pyF, "duration", PyRealTime_FromRealTime(f.duration));
+                    PyObject *rt = PyRealTime_FromRealTime(f.duration);
+                    PyDict_SetItemString(pyF, "duration", rt);
+                    Py_DECREF(rt);
                 }
 
                 StringConversion strconv;
-    
-                PyDict_SetItemString
-                    (pyF, "label", strconv.string2py(f.label));
+
+                setstring(pyF, "label", f.label);
 
                 if (!f.values.empty()) {
-                    PyDict_SetItemString
-                        (pyF, "values", conv.PyArray_From_FloatVector(f.values));
+                    PyObject *vv = conv.PyArray_From_FloatVector(f.values);
+                    PyDict_SetItemString(pyF, "values", vv);
+                    Py_DECREF(vv);
                 }
 
                 PyList_SET_ITEM(pyFl, fli, pyF);
@@ -548,6 +567,8 @@ convertFeatureSet(const Plugin::FeatureSet &fs)
 
             PyObject *pyN = PyLong_FromLong(fno);
             PyDict_SetItem(pyFs, pyN, pyFl);
+            Py_DECREF(pyN);
+            Py_DECREF(pyFl);
         }
     }
     
@@ -713,7 +734,7 @@ unload(PyObject *self, PyObject *)
     pd->plugin = 0; // This is checked by getPluginObject, so we avoid
                     // blowing up if called repeatedly
 
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static PyMemberDef PyPluginObject_members[] =
