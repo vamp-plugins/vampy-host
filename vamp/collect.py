@@ -132,30 +132,35 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     output:
 
     * If the plugin output emits single-valued features at a fixed
-      sample-rate, then the "vector" element will be used. It will
-      contain a tuple of step time (the time in seconds between
-      consecutive feature values) and a one-dimensional NumPy array of
-      feature values. An example of such a feature might be a loudness
-      curve against time.
+    sample-rate, then the "vector" element will be used. It will
+    contain a tuple of step time (the time in seconds between
+    consecutive feature values) and a one-dimensional NumPy array of
+    feature values. An example of such a feature might be a loudness
+    curve against time.
 
     * If the plugin output emits multiple-valued features, with an
-      equal number of bins per feature, at a fixed sample-rate, then
-      the "matrix" element will be used. It will contain a tuple of
-      step time (the time in seconds between consecutive feature
-      values) and a two-dimensional NumPy array of feature values. An
-      example of such a feature might be a spectrogram.
+    equal number of bins per feature, at a fixed sample-rate, then
+    the "matrix" element will be used. It will contain a tuple of
+    step time (the time in seconds between consecutive feature
+    values) and a two-dimensional NumPy array of feature values. An
+    example of such a feature might be a spectrogram.
 
     * Otherwise, the "list" element will be used, and will contain a
-      list of features, where each feature is represented as a
-      dictionary containing a timestamp (always) and a duration
-      (optionally), a label (string), and a 1-dimensional array of
-      float values.
+    list of features, where each feature is represented as a
+    dictionary containing a timestamp (always) and a duration
+    (optionally), a label (string), and a 1-dimensional array of
+    float values.
+
+    If you wish to override the processing step size, block size, or
+    process timestamp method, you may supply them as keyword arguments
+    with the keywords step_size (int), block_size (int), and
+    process_timestamp_method (choose from vamp.vampyhost.SHIFT_DATA,
+    vamp.vampyhost.SHIFT_TIMESTAMP, or vamp.vampyhost.NO_SHIFT).
 
     If you would prefer to obtain features as they are calculated
     (where the plugin supports this) and with the format in which the
     plugin returns them, via an asynchronous generator function, use
     vamp.process() instead.
-
     """
 
     plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs)

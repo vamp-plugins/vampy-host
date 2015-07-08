@@ -71,9 +71,11 @@ def load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs):
     block size (or others as specified, see below). The channel count is
     taken from the shape of the data array provided.
 
-    Optionally the step size, block size, and process timestamp method
-    may be provided through step_size, block_size, and
-    process_timestamp_method keyword arguments.
+    If you wish to override the step size, block size, or process
+    timestamp method to be used, you may supply them as keyword
+    arguments with keywords step_size (int), block_size (int), and
+    process_timestamp_method (choose from vamp.vampyhost.SHIFT_DATA,
+    vamp.vampyhost.SHIFT_TIMESTAMP, or vamp.vampyhost.NO_SHIFT).
     """
 
     plug = vampyhost.load_plugin(plugin_key, sample_rate,

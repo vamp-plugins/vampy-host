@@ -82,6 +82,12 @@ def process_audio(data, sample_rate, plugin_key, output = "", parameters = {}, *
     (RealTime objects), label (string), and a 1-dimensional array of
     float values.
 
+    If you wish to override the step size, block size, or process
+    timestamp method to be used, you may supply them as keyword
+    arguments with keywords step_size (int), block_size (int), and
+    process_timestamp_method (choose from vamp.vampyhost.SHIFT_DATA,
+    vamp.vampyhost.SHIFT_TIMESTAMP, or vamp.vampyhost.NO_SHIFT).
+
     If you would prefer to obtain all features in a single output
     structure, consider using vamp.collect() instead.
     """
@@ -191,6 +197,12 @@ def process_audio_multiple_outputs(data, sample_rate, plugin_key, outputs, param
     represented as a dictionary containing, optionally, timestamp and
     duration (RealTime objects), label (string), and a 1-dimensional
     array of float values.
+
+    If you wish to override the step size, block size, or process
+    timestamp method to be used, you may supply them as keyword
+    arguments with keywords step_size (int), block_size (int), and
+    process_timestamp_method (choose from vamp.vampyhost.SHIFT_DATA,
+    vamp.vampyhost.SHIFT_TIMESTAMP, or vamp.vampyhost.NO_SHIFT).
     """
 
     plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs)
