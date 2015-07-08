@@ -54,6 +54,9 @@
 #include "StringConversion.h"
 #include "PyRealTime.h"
 
+#include "vamp-hostsdk/PluginWrapper.h"
+#include "vamp-hostsdk/PluginInputDomainAdapter.h"
+
 #include <string>
 #include <vector>
 #include <cstddef>
@@ -61,6 +64,7 @@
 
 using namespace std;
 using namespace Vamp;
+using namespace Vamp::HostExt;
 
 static
 PyPluginObject *
@@ -306,6 +310,38 @@ get_outputs(PyObject *self, PyObject *args)
     }
 
     return outputs;
+}
+
+static PyObject *
+set_process_timestamp_method(PyObject *self, PyObject *args)
+{
+    ssize_t method;
+
+    if (!PyArg_ParseTuple(args,
+                          "n",
+                          &method)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "set_process_timestamp_method() takes method (int) argument");
+        return 0; }
+
+    PyPluginObject *pd = getPluginObject(self);
+    if (!pd) return 0;
+
+    PluginWrapper *wrapper = dynamic_cast<PluginWrapper *>(pd->plugin);
+    if (!wrapper) {
+        PyErr_SetString(PyExc_Exception,
+                        "Plugin was not loaded with ADAPT_INPUT_DOMAIN flag (no wrapper present)");
+        return 0;
+    }
+
+    PluginInputDomainAdapter *adapter = wrapper->getWrapper<PluginInputDomainAdapter>();
+    if (!adapter) {
+        Py_RETURN_FALSE;
+    }
+
+    adapter->setProcessTimestampMethod
+        (PluginInputDomainAdapter::ProcessTimestampMethod(method));
+    Py_RETURN_TRUE;
 }
 
 static PyObject *
@@ -770,7 +806,7 @@ static PyMethodDef PyPluginObject_methods[] =
 
     {"set_parameter_values", set_parameter_values, METH_VARARGS,
      "set_parameter_values(dict) -> Set multiple parameters to values corresponding to the key/value pairs in the dict. Any parameters not mentioned in the dict are unchanged."},
-
+    
     {"select_program", select_program, METH_VARARGS,
      "select_program(name) -> Select the processing program with the given name."},
     
@@ -785,6 +821,9 @@ static PyMethodDef PyPluginObject_methods[] =
 
     {"get_max_channel_count", get_max_channel_count, METH_VARARGS,
      "get_max_channel_count() -> Return the maximum number of channels of audio data the plugin accepts as input."},
+
+    {"set_process_timestamp_method", set_process_timestamp_method, METH_VARARGS,
+     "set_process_timestamp_method(method) -> Set the method used for timestamp adjustment in plugins using frequency-domain input, where that input is being automatically converted for a plugin loaded with the ADAPT_INPUT_DOMAIN flag set (or one of ADAPT_ALL_SAFE or ADAPT_ALL). The method must be one of SHIFT_TIMESTAMP, SHIFT_DATA, or NO_SHIFT. The default is SHIFT_TIMESTAMP."},
     
     {"initialise", initialise, METH_VARARGS,
      "initialise(channels, stepSize, blockSize) -> Initialise the plugin for the given number of channels and processing frame sizes. This must be called before process_block() can be used."},

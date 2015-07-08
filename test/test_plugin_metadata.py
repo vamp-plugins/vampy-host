@@ -79,6 +79,23 @@ def test_info():
 def test_parameterdescriptors():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     assert plug.parameters[0]["identifier"] == "produce_output"
+
+def test_timestamp_method_fail():
+    plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
+    try:
+        plug.set_process_timestamp_method(vh.SHIFT_DATA)
+        assert False
+    except Exception:
+        pass
+
+def test_timestamp_method_fail2():
+    plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_INPUT_DOMAIN)
+    # Not a freq-domain plugin: shouldn't throw, but should return false
+    assert (not plug.set_process_timestamp_method(vh.SHIFT_DATA))
+
+def test_timestamp_method_succeed():
+    plug = vh.load_plugin(plugin_key_freq, rate, vh.ADAPT_INPUT_DOMAIN)
+    assert plug.set_process_timestamp_method(vh.SHIFT_DATA)
     
 def test_setparameter():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)

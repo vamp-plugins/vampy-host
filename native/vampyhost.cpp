@@ -260,16 +260,16 @@ static PyMethodDef vampyhost_methods[] = {
      "get_plugin_path() -> Return a list of directories which will be searched for Vamp plugins. This may be changed by setting the VAMP_PATH environment variable."},
 
     {"get_category_of", get_category_of, METH_VARARGS,
-     "get_category_of(pluginKey) -> Return the category of a Vamp plugin given its key, if known. The category is expressed as a list of nested types from least to most specific."},
+     "get_category_of(plugin_key) -> Return the category of a Vamp plugin given its key, if known. The category is expressed as a list of nested types from least to most specific."},
 
     {"get_library_for", get_library_for, METH_VARARGS,
-     "get_library_for(pluginKey) -> Return the file path of the Vamp plugin library in which the given plugin key is found, or an empty string if the plugin is not installed."},
+     "get_library_for(plugin_key) -> Return the file path of the Vamp plugin library in which the given plugin key is found, or an empty string if the plugin is not installed."},
 
     {"get_outputs_of", get_outputs_of, METH_VARARGS,
-     "get_outputs_of(pluginKey) -> Return a list of the output identifiers of the plugin with the given key, if installed."},
+     "get_outputs_of(plugin_key) -> Return a list of the output identifiers of the plugin with the given key, if installed."},
 
     {"load_plugin", load_plugin, METH_VARARGS,
-     "load_plugin(pluginKey, samplerate) -> Load the plugin that has the given key, if installed, and return the plugin object."},
+     "load_plugin(plugin_key, sample_rate, adapter_flags) -> Load the plugin that has the given key, if installed, and return the plugin object. The adapter_flags may be ADAPT_NONE, any additive combination of ADAPT_INPUT_DOMAIN, ADAPT_CHANNEL_COUNT, ADAPT_BUFFER_SIZE, or one of the special flags ADAPT_ALL_SAFE or ADAPT_ALL. If in doubt, pass ADAPT_ALL_SAFE. See the Vamp SDK documentation for the PluginLoader class for more details."},
 
     {"frame_to_realtime", frame_to_realtime, METH_VARARGS,
      "frame_to_realtime() -> Convert sample frame number and sample rate to a RealTime object." },
@@ -372,7 +372,13 @@ initvampyhost(void)
         setint(dict, "ADAPT_ALL_SAFE",
                PluginLoader::ADAPT_ALL_SAFE) < 0 ||
         setint(dict, "ADAPT_ALL",
-               PluginLoader::ADAPT_ALL) < 0) {
+               PluginLoader::ADAPT_ALL) < 0 ||
+        setint(dict, "SHIFT_TIMESTAMP",
+               PluginInputDomainAdapter::ShiftTimestamp) < 0 ||
+        setint(dict, "SHIFT_DATA",
+               PluginInputDomainAdapter::ShiftData) < 0 ||
+        setint(dict, "NO_SHIFT",
+               PluginInputDomainAdapter::NoShift) < 0) {
         cerr << "ERROR: initvampyhost: Failed to add enums to module dictionary" << endl;
         return BAD_RETURN;
     }
