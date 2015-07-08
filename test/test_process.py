@@ -224,6 +224,19 @@ def test_process_freq_timestamps():
             print("This test fails because of a bug in the Vamp plugin SDK. Please update to SDK version 2.6.")
         assert actual == expected
 
+def test_process_freq_shift_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process_audio(buf, rate, plugin_key_freq, "input-timestamp", process_timestamp_method = vamp.vampyhost.SHIFT_DATA))
+    assert len(results) == 20
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the frame at the start of
+        # the input buffer
+        expected = i * (blocksize/2)
+        actual = results[i]["values"][0]
+        if actual == 2047 and expected == 2048:
+            print("This test fails because of a bug in the Vamp plugin SDK. Please update to SDK version 2.6.")
+        assert actual == expected
+
 def test_process_multi_freq_timestamps():
     buf = input_data(blocksize * 10)
     results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key_freq, [ "input-timestamp" ], {}))
@@ -235,6 +248,39 @@ def test_process_multi_freq_timestamps():
         actual = results[i]["input-timestamp"]["values"][0]
         if actual == 2047 and expected == 2048:
             print("This test fails because of a bug in the Vamp plugin SDK. Please update to SDK version 2.6.")
+        assert actual == expected
+
+def test_process_blocksize_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, block_size = blocksize * 2)) # step size defaults to block size
+    assert len(results) == 5
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the first frame in the
+        # input buffer
+        expected = i * blocksize * 2
+        actual = results[i]["values"][0]
+        assert actual == expected
+
+def test_process_stepsize_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, step_size = blocksize / 2))
+    assert len(results) == 20
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the first frame in the
+        # input buffer
+        expected = (i * blocksize) / 2
+        actual = results[i]["values"][0]
+        assert actual == expected
+
+def test_process_stepsize_blocksize_timestamps():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, block_size = blocksize * 2, step_size = blocksize / 2))
+    assert len(results) == 20
+    for i in range(len(results)):
+        # The timestamp should be the frame number of the first frame in the
+        # input buffer
+        expected = (i * blocksize) / 2
+        actual = results[i]["values"][0]
         assert actual == expected
 
 def test_process_multiple_outputs():
