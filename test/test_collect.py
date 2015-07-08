@@ -42,6 +42,28 @@ def test_collect_one_sample_per_step():
         actual = results[i]
         assert actual == expected
 
+def test_process_summary_param():
+    buf = input_data(blocksize * 10)
+    rdict = vamp.collect(buf, rate, plugin_key, "input-summary", { "produce_output": False })
+    assert ("vector" in rdict)
+    step, results = rdict["vector"]
+    assert len(results) == 0
+    rdict = vamp.collect(buf, rate, plugin_key, "input-summary", { "produce_output": True })
+    assert ("vector" in rdict)
+    step, results = rdict["vector"]
+    assert len(results) > 0
+
+def test_process_summary_param_kwargs():
+    buf = input_data(blocksize * 10)
+    rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", parameters = { "produce_output": False }, data = buf, sample_rate = rate)
+    assert ("vector" in rdict)
+    step, results = rdict["vector"]
+    assert len(results) == 0
+    rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", data = buf, sample_rate = rate)
+    assert ("vector" in rdict)
+    step, results = rdict["vector"]
+    assert len(results) > 0
+
 def test_collect_fixed_sample_rate():
     buf = input_data(blocksize * 10)
     rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr")
