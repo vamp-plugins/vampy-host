@@ -108,7 +108,7 @@ def reshape(results, sample_rate, step_size, output_desc, shape):
     return rv
 
         
-def collect(data, sample_rate, plugin_key, output = "", parameters = {}):
+def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwargs):
     """Process audio data with a Vamp plugin, and make the results from a
     single plugin output available as a single structure.
 
@@ -158,7 +158,7 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}):
 
     """
 
-    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs)
 
     if output == "":
         output_desc = plugin.get_output(0)

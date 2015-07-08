@@ -64,27 +64,45 @@ def get_category_of(plugin_key):
     """
     return vampyhost.get_category_of(plugin_key)
 
-def load_and_configure(data, sample_rate, plugin_key, parameters):
-    """Load the plugin with the given plugin key, at a given sample rate,
-    configure it with the parameter keys and values in the given
-    parameter dictionary, and initialise it with its preferred step
-    and block size. The channel count is taken from the shape of the
-    data array provided.
+def load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs):
+    """Load the plugin with the given plugin key, at a given sample
+    rate, configure it with the parameter keys and values in the given
+    parameter dictionary, and initialise it with its preferred step and
+    block size (or others as specified, see below). The channel count is
+    taken from the shape of the data array provided.
+
+    Optionally the step size, block size, and process timestamp method
+    may be provided through step_size, block_size, and
+    process_timestamp_method keyword arguments.
     """
 
     plug = vampyhost.load_plugin(plugin_key, sample_rate,
                                  vampyhost.ADAPT_INPUT_DOMAIN +
                                  vampyhost.ADAPT_CHANNEL_COUNT)
 
+    if "process_timestamp_method" in kwargs:
+        plug.set_process_timestamp_method(kwargs.pop("process_timestamp_method"))
+
     plug.set_parameter_values(parameters)
 
-    step_size = plug.get_preferred_step_size()
-    block_size = plug.get_preferred_block_size()
-
+    block_size = 0
+    if "block_size" in kwargs:
+        block_size = kwargs.pop("block_size")
+    if block_size == 0:
+        block_size = plug.get_preferred_block_size()
     if block_size == 0:
         block_size = 1024
+
+    step_size = 0
+    if "step_size" in kwargs:
+        step_size = kwargs.pop("step_size")
     if step_size == 0:
-        step_size = block_size ##!!! or block_size/2, but check this with input domain adapter
+        step_size = plug.get_preferred_step_size()
+    if step_size == 0:
+        step_size = block_size
+
+    if kwargs != {}:
+        raise Exception("Unexpected arguments in kwargs: " + str(kwargs.keys()))
 
     channels = 1
     if data.ndim > 1:
@@ -93,4 +111,4 @@ def load_and_configure(data, sample_rate, plugin_key, parameters):
     if plug.initialise(channels, step_size, block_size):
         return (plug, step_size, block_size)
     else:
-        raise "Failed to initialise plugin"
+        raise Exception("Failed to initialise plugin")

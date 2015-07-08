@@ -53,16 +53,33 @@ def test_process_summary_param():
     step, results = rdict["vector"]
     assert len(results) > 0
 
-def test_process_summary_param_kwargs():
+def test_process_summary_param_kwargs_1():
     buf = input_data(blocksize * 10)
     rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", parameters = { "produce_output": False }, data = buf, sample_rate = rate)
     assert ("vector" in rdict)
     step, results = rdict["vector"]
     assert len(results) == 0
+
+def test_process_summary_param_kwargs_2():
+    buf = input_data(blocksize * 10)
     rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", data = buf, sample_rate = rate)
     assert ("vector" in rdict)
     step, results = rdict["vector"]
     assert len(results) > 0
+    
+def test_process_summary_param_kwargs_3():
+    buf = input_data(blocksize * 10)
+    rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", data = buf, sample_rate = rate, process_timestamp_method = vamp.vampyhost.SHIFT_DATA)
+    assert ("vector" in rdict)
+    step, results = rdict["vector"]
+    assert len(results) > 0
+
+def test_process_summary_param_kwargs_fail():
+    buf = input_data(blocksize * 10)
+    try:
+        rdict = vamp.collect(plugin_key = plugin_key, output = "input-summary", data = buf, sample_rate = rate, process_timestamp_method = vamp.vampyhost.SHIFT_DATA, unknown_argument = 1)
+    except Exception: # unknown kwarg
+        pass
 
 def test_collect_fixed_sample_rate():
     buf = input_data(blocksize * 10)

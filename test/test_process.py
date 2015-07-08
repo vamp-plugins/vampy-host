@@ -156,6 +156,26 @@ def test_process_freq_summary():
         eps = 1e-6
         assert abs(actual - expected) < eps
 
+def test_process_freq_summary_shift():
+    buf = input_data(blocksize * 10)
+    results = list(vamp.process_audio(buf, rate, plugin_key_freq, "input-summary", {}, process_timestamp_method = vamp.vampyhost.SHIFT_DATA))
+    assert len(results) == 20
+    for i in range(len(results)):
+        # as test_process_freq_summary, except that the input is effectively
+        # padded by the adapter with an additional half-blocksize of zeros
+        # before conversion
+        if i == 0:
+            # this block doesn't interact at all well with our test, we get
+            # spurious low values in the block converted back within the plugin
+            # because of the big discontinuity & window ripple after fftshift
+            pass
+        else:
+            expected = (i-1) * (blocksize/2) + blocksize/2 + 1 # for "first" elt
+            expected = expected + blocksize - 1 # non-zero elts
+            actual = results[i]["values"][0]
+            eps = 1e-6
+            assert abs(actual - expected) < eps
+
 def test_process_multi_freq_summary():
     buf = input_data(blocksize * 10)
     results = list(vamp.process_audio_multiple_outputs(buf, rate, plugin_key_freq, [ "input-summary" ], {}))

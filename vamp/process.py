@@ -59,7 +59,7 @@ def process_with_initialised_plugin(ff, sample_rate, step_size, plugin, outputs)
                 yield { o: r }
 
 
-def process_audio(data, sample_rate, plugin_key, output = "", parameters = {}):
+def process_audio(data, sample_rate, plugin_key, output = "", parameters = {}, **kwargs):
     """Process audio data with a Vamp plugin, and make the results from a
     single plugin output available as a generator.
 
@@ -86,7 +86,7 @@ def process_audio(data, sample_rate, plugin_key, output = "", parameters = {}):
     structure, consider using vamp.collect() instead.
     """
 
-    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs)
 
     if output == "":
         output = plugin.get_output(0)["identifier"]
@@ -169,7 +169,7 @@ def process_frames(ff, sample_rate, step_size, plugin_key, output = "", paramete
     plugin.unload()
     
 
-def process_audio_multiple_outputs(data, sample_rate, plugin_key, outputs, parameters = {}):
+def process_audio_multiple_outputs(data, sample_rate, plugin_key, outputs, parameters = {}, **kwargs):
     """Process audio data with a Vamp plugin, and make the results from a
     set of plugin outputs available as a generator.
 
@@ -193,7 +193,7 @@ def process_audio_multiple_outputs(data, sample_rate, plugin_key, outputs, param
     array of float values.
     """
 
-    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters)
+    plugin, step_size, block_size = vamp.load.load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs)
 
     ff = vamp.frames.frames_from_array(data, step_size, block_size)
 
