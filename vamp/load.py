@@ -64,6 +64,14 @@ def get_category_of(plugin_key):
     """
     return vampyhost.get_category_of(plugin_key)
 
+def get_parameters_of(plugin_key):
+    """Obtain the parameter descriptors, if any, for the given plugin key.
+    """
+    plug = vampyhost.load_plugin(plugin_key, 44100, vampyhost.ADAPT_NONE)
+    params = plug.parameters
+    plug.unload()
+    return params
+
 def load_and_configure(data, sample_rate, plugin_key, parameters, **kwargs):
     """Load the plugin with the given plugin key, at a given sample
     rate, configure it with the parameter keys and values in the given

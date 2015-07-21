@@ -96,6 +96,7 @@ This module contains three sorts of function:
 
    * ``vamp.list_plugins``
    * ``vamp.get_outputs_of``
+   * ``vamp.get_parameters_of``
    * ``vamp.get_category_of``
 
    These retrieve the installed plugin keys and get basic information
@@ -162,7 +163,7 @@ details.
 
 import vampyhost
 
-from vamp.load import list_plugins, get_outputs_of, get_category_of
+from vamp.load import list_plugins, get_outputs_of, get_parameters_of, get_category_of
 from vamp.process import process_audio, process_frames, process_audio_multiple_outputs, process_frames_multiple_outputs
 from vamp.collect import collect
 

@@ -1,5 +1,6 @@
 
 import vampyhost as vh
+import vamp
 
 plugin_key = "vamp-test-plugin:vamp-test-plugin"
 
@@ -17,11 +18,19 @@ def test_plugin_exists():
         print("Test plugin version " + str(plug.info["pluginVersion"]) + " does not match expected version " + str(expectedVersion))
     assert plug.info["pluginVersion"] == expectedVersion
 
+def test_plugin_exists_module():
+    assert plugin_key in vamp.list_plugins()
+
 def test_plugin_exists_in_freq_version():
     assert plugin_key_freq in vh.list_plugins()
 
 def test_getoutputlist():
     outputs = vh.get_outputs_of(plugin_key)
+    assert len(outputs) == 10
+    assert "input-summary" in outputs
+
+def test_getoutputlist_module():
+    outputs = vamp.get_outputs_of(plugin_key)
     assert len(outputs) == 10
     assert "input-summary" in outputs
 
@@ -79,6 +88,11 @@ def test_info():
 def test_parameterdescriptors():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
     assert plug.parameters[0]["identifier"] == "produce_output"
+
+def test_getparameters_module():
+    params = vamp.get_parameters_of(plugin_key)
+    assert len(params) == 1
+    assert params[0]["identifier"] == "produce_output"
 
 def test_timestamp_method_fail():
     plug = vh.load_plugin(plugin_key, rate, vh.ADAPT_NONE)
