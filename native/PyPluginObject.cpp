@@ -354,7 +354,7 @@ initialise(PyObject *self, PyObject *args)
                            &stepSize,
                            &blockSize)) {
         PyErr_SetString(PyExc_TypeError,
-                        "initialise() takes channel count, step size, and block size arguments");
+                        "initialise() takes channel count (int), step size (int), and block size (int) arguments");
         return 0;
     }
 

@@ -263,7 +263,7 @@ def test_process_blocksize_timestamps():
 
 def test_process_stepsize_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, step_size = blocksize / 2))
+    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, step_size = int(blocksize / 2)))
     assert len(results) == 20
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
@@ -274,7 +274,7 @@ def test_process_stepsize_timestamps():
 
 def test_process_stepsize_blocksize_timestamps():
     buf = input_data(blocksize * 10)
-    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, block_size = blocksize * 2, step_size = blocksize / 2))
+    results = list(vamp.process_audio(buf, rate, plugin_key, "input-timestamp", {}, block_size = blocksize * 2, step_size = int(blocksize / 2)))
     assert len(results) == 20
     for i in range(len(results)):
         # The timestamp should be the frame number of the first frame in the
