@@ -69,7 +69,7 @@ def fill_timestamps(results, sample_rate, step_size, output_desc):
 
     output = output_desc["identifier"]
     
-    selected = [ r[output] for r in results ]
+    selected = ( r[output] for r in results )
 
     stamped = timestamp_features(sample_rate, step_size, output_desc, selected)
 
