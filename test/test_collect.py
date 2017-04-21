@@ -90,7 +90,24 @@ def test_collect_fixed_sample_rate():
     for i in range(len(results)):
         assert abs(results[i] - i * 0.1) < eps
 
-def test_collect_fixed_sample_rate_2():
+def test_collect_fixed_sample_rate_2_vector():
+    # This one has discontinuities and overlaps, so it should be
+    # returned to us in two forms: as a simple vector, and as an
+    # additional tracks shape with one vector for each separate
+    # bit. This test covers the simple vector part
+    buf = input_data(blocksize * 10)
+    rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
+    step, results = rdict["vector"]
+    assert abs(float(step) - 0.4) < eps
+    assert len(results) == 10
+    for i in range(len(results)):
+        assert abs(results[i] - i * 0.1) < eps
+
+def test_collect_fixed_sample_rate_2_tracks():
+    # This one has discontinuities and overlaps, so it should be
+    # returned to us in two forms: as a simple vector, and as an
+    # additional tracks shape with one vector for each separate
+    # bit. This test covers the tracks part.
     buf = input_data(blocksize * 10)
     rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
     results = rdict["tracks"]

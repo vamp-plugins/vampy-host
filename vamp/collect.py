@@ -89,11 +89,11 @@ def deduce_shape(output_desc):
         return "vector"
     return "matrix"
 
-
-def reshape_vector(results, out_step, output_desc):
+def populate_reshaped_vector(results, out_step, output_desc, return_dict):
 
     output = output_desc["identifier"]
     tracks = []
+    whole = []
     current_track = []
     current_start_time = 0
     out_step_secs = out_step.to_float()
@@ -103,6 +103,7 @@ def reshape_vector(results, out_step, output_desc):
     for r in results:
         f = r[output]
         n = n + 1
+        whole.append(f["values"][0])
         if output_desc["sampleType"] == vampyhost.FIXED_SAMPLE_RATE:
             if "timestamp" in f:
                 m = int(round(f["timestamp"].to_float() / out_step_secs))
@@ -121,28 +122,24 @@ def reshape_vector(results, out_step, output_desc):
             tracks.append({ "start": current_start_time,
                             "step": out_step,
                             "values": np.array(current_track, np.float32) })
-        return ("tracks", tracks)
-    else:
-        return ("vector", (out_step, np.array(current_track, np.float32)))
+        return_dict["tracks"] = tracks
 
-    
-def reshape(results, sample_rate, step_size, output_desc, shape):
+    return_dict["vector"] = (out_step, whole)
+
+def populate_reshaped_features(results, sample_rate, step_size, output_desc, shape, return_dict):
 
     output = output_desc["identifier"]
     out_step = get_feature_step_time(sample_rate, step_size, output_desc)
     adjusted_shape = shape
 
     if shape == "vector":
-        (adjusted_shape, rv) = reshape_vector(results, out_step, output_desc)
+        populate_reshaped_vector(results, out_step, output_desc, return_dict)
     elif shape == "matrix":
         #!!! todo: check that each feature has the right number of bins?
         outseq = [r[output]["values"] for r in results]
-        rv = ( out_step, np.array(outseq, np.float32) )
+        return_dict[shape] = (out_step, np.array(outseq, np.float32))
     else:
-        rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
-
-    return (adjusted_shape, rv)
-
+        return_dict[shape] = list(fill_timestamps(results, sample_rate, step_size, output_desc))
         
 def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwargs):
     """Process audio data with a Vamp plugin, and make the results from a
@@ -223,7 +220,10 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     results = vamp.process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
 
     shape = deduce_shape(output_desc)
-    (adjusted_shape, rv) = reshape(results, sample_rate, step_size, output_desc, shape)
 
+    return_dict = {}
+    populate_reshaped_features(results, sample_rate, step_size, output_desc, shape, return_dict)
+
+    print("return_dict now = " + str(return_dict))
     plugin.unload()
-    return { adjusted_shape : rv }
+    return return_dict
