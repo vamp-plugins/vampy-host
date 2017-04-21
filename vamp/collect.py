@@ -55,7 +55,7 @@ def timestamp_features(sample_rate, step_size, output_desc, features):
     elif output_desc["sampleType"] == vampyhost.FIXED_SAMPLE_RATE:
         output_rate = output_desc["sampleRate"]
         for f in features:
-            if "has_timestamp" in f:
+            if "timestamp" in f:
                 n = int(f["timestamp"].to_float() * output_rate + 0.5)
             else:
                 n = n + 1
@@ -90,14 +90,50 @@ def deduce_shape(output_desc):
     return "matrix"
 
 
+def reshape_vector(results, out_step, output_desc):
+
+    output = output_desc["identifier"]
+    tracks = []
+    current_track = []
+    current_start_time = 0
+    out_step_secs = out_step.to_float()
+
+    n = -1
+    
+    for r in results:
+        f = r[output]
+        n = n + 1
+        if output_desc["sampleType"] == vampyhost.FIXED_SAMPLE_RATE:
+            if "timestamp" in f:
+                m = int(round(f["timestamp"].to_float() / out_step_secs))
+                if m != n:
+                    if current_track != []:
+                        tracks.append({ "start": current_start_time,
+                                        "step": out_step,
+                                        "values": np.array(current_track, np.float32) })
+                        current_track = []
+                        n = m
+                    current_start_time = vampyhost.RealTime('seconds', m * out_step_secs)
+        current_track.append(f["values"][0])
+
+    if tracks != []:
+        if current_track != []:
+            tracks.append({ "start": current_start_time,
+                            "step": out_step,
+                            "values": np.array(current_track, np.float32) })
+        return ("tracks", tracks)
+    else:
+        return ("vector", (out_step, np.array(current_track, np.float32)))
+
+    
 def reshape(results, sample_rate, step_size, output_desc, shape):
 
     output = output_desc["identifier"]
     out_step = get_feature_step_time(sample_rate, step_size, output_desc)
+    adjusted_shape = shape
 
     if shape == "vector":
-        rv = ( out_step,
-               np.array([r[output]["values"][0] for r in results], np.float32) )
+        (adjusted_shape, rv) = reshape_vector(results, out_step, output_desc)
     elif shape == "matrix":
         #!!! todo: check that each feature has the right number of bins?
         outseq = [r[output]["values"] for r in results]
@@ -105,11 +141,12 @@ def reshape(results, sample_rate, step_size, output_desc, shape):
     else:
         rv = list(fill_timestamps(results, sample_rate, step_size, output_desc))
 
-    return rv
+    return (adjusted_shape, rv)
 
         
 def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwargs):
     """Process audio data with a Vamp plugin, and make the results from a
+
     single plugin output available as a single structure.
 
     The provided data should be a 1- or 2-dimensional list or NumPy
@@ -127,16 +164,18 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
 
     The results are returned in a dictionary which will always contain
     exactly one element, whose key is one of the strings "vector",
-    "matrix", or "list". Which one is used depends on the structure of
-    features set out in the output descriptor for the requested plugin
-    output:
+    "matrix", "list", or "tracks".
 
-    * If the plugin output emits single-valued features at a fixed
-    sample-rate, then the "vector" element will be used. It will
-    contain a tuple of step time (the time in seconds between
-    consecutive feature values) and a one-dimensional NumPy array of
-    feature values. An example of such a feature might be a loudness
-    curve against time.
+    Which one is used depends on the structure of features set out in
+    the output descriptor for the requested plugin output, and sometimes
+    on the features themselves:
+
+    * If the plugin output emits single-valued features continuously at
+    a fixed sample-rate starting at the beginning of the input, then the
+    "vector" element will be used. It will contain a tuple of step time
+    (the time in seconds between consecutive feature values) and a
+    one-dimensional NumPy array of feature values. An example of such a
+    feature might be a loudness curve against time.
 
     * If the plugin output emits multiple-valued features, with an
     equal number of bins per feature, at a fixed sample-rate, then
@@ -144,6 +183,14 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     step time (the time in seconds between consecutive feature
     values) and a two-dimensional NumPy array of feature values. An
     example of such a feature might be a spectrogram.
+
+    * If the plugin output emits single-valued features at a fixed
+    sample-rate but with gaps between features or a non-zero start time,
+    then the "tracks" element will be used. It will contain a list of
+    dictionaries, each containing a startTime, a stepTime, and a
+    one-dimensional NumPy array of contiguous feature values. An example
+    of such a feature might be a pitch tracker that emits values only
+    during pitched sections of the input audio.
 
     * Otherwise, the "list" element will be used, and will contain a
     list of features, where each feature is represented as a
@@ -176,8 +223,7 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     results = vamp.process.process_with_initialised_plugin(ff, sample_rate, step_size, plugin, [output])
 
     shape = deduce_shape(output_desc)
-    rv = reshape(results, sample_rate, step_size, output_desc, shape)
+    (adjusted_shape, rv) = reshape(results, sample_rate, step_size, output_desc, shape)
 
     plugin.unload()
-    return { shape : rv }
-
+    return { adjusted_shape : rv }

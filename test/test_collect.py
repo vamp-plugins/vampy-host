@@ -93,11 +93,19 @@ def test_collect_fixed_sample_rate():
 def test_collect_fixed_sample_rate_2():
     buf = input_data(blocksize * 10)
     rdict = vamp.collect(buf, rate, plugin_key, "curve-fsr-timed")
-    step, results = rdict["vector"]
-    assert abs(float(step) - 0.4) < eps
-    assert len(results) == 10
+    results = rdict["tracks"]
+    assert len(results) == 8
+    expected_starts = [ 0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 4.0, 4.0 ]
+    expected_lengths = [ 1, 1, 2, 1, 1, 2, 1, 1 ]
+    expected_values = [ [ 0.0 ], [ 0.1 ], [ 0.2, 0.3 ], [ 0.4 ], [ 0.5 ],
+                        [ 0.6, 0.7 ], [ 0.8 ], [ 0.9 ] ] 
     for i in range(len(results)):
-        assert abs(results[i] - i * 0.1) < eps
+        track = results[i]
+        assert abs(float(track["step"]) - 0.4) < eps
+        assert abs(float(track["start"]) - expected_starts[i]) < eps
+        assert len(track["values"]) == expected_lengths[i]
+        for j in range(expected_lengths[i]):
+            assert abs(track["values"][j] - expected_values[i][j]) < eps
         
 def test_collect_variable_sample_rate():
     buf = input_data(blocksize * 10)
