@@ -159,20 +159,30 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     by setting its parameters according to the (string) key and
     (float) value data found in the dict.
 
-    The results are returned in a dictionary which will always contain
-    exactly one element, whose key is one of the strings "vector",
-    "matrix", "list", or "tracks".
+    The results are returned in a dictionary. This will always contain
+    exactly one of the keys "vector", "matrix", or "list". In addition
+    it may optionally contain the key "tracks". Which of these is used
+    depends on the structure of features set out in the output
+    descriptor for the requested plugin output, and sometimes on the
+    features themselves, as follows:
 
-    Which one is used depends on the structure of features set out in
-    the output descriptor for the requested plugin output, and sometimes
-    on the features themselves:
+    * If the plugin output emits single-valued features at a fixed
+    sample-rate, then the "vector" element will be used. It will contain
+    a tuple of step time (the time in seconds between consecutive
+    feature values) and a one-dimensional NumPy array of feature
+    values. An example of such a feature might be a loudness curve
+    against time.
 
-    * If the plugin output emits single-valued features continuously at
-    a fixed sample-rate starting at the beginning of the input, then the
-    "vector" element will be used. It will contain a tuple of step time
-    (the time in seconds between consecutive feature values) and a
-    one-dimensional NumPy array of feature values. An example of such a
-    feature might be a loudness curve against time.
+    * If the above is true but it also happens that the plugin output
+    has gaps between some features, so that a single continuous vector
+    can't convey all the relevant information, then the "tracks" element
+    will additionally be used. It will contain a list of dictionaries,
+    one for each set of contiguous points in the output, each containing
+    elements "start" (start time in seconds), "step" (step time in
+    seconds), and "values" (a one-dimensional NumPy array of contiguous
+    feature values). An example of such a feature might be the output of
+    a pitch tracker that emits values only during pitched sections of
+    the input audio.
 
     * If the plugin output emits multiple-valued features, with an
     equal number of bins per feature, at a fixed sample-rate, then
@@ -180,14 +190,6 @@ def collect(data, sample_rate, plugin_key, output = "", parameters = {}, **kwarg
     step time (the time in seconds between consecutive feature
     values) and a two-dimensional NumPy array of feature values. An
     example of such a feature might be a spectrogram.
-
-    * If the plugin output emits single-valued features at a fixed
-    sample-rate but with gaps between features or a non-zero start time,
-    then the "tracks" element will be used. It will contain a list of
-    dictionaries, each containing a startTime, a stepTime, and a
-    one-dimensional NumPy array of contiguous feature values. An example
-    of such a feature might be a pitch tracker that emits values only
-    during pitched sections of the input audio.
 
     * Otherwise, the "list" element will be used, and will contain a
     list of features, where each feature is represented as a
